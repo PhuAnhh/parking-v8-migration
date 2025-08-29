@@ -1,4 +1,4 @@
-namespace Application.Entities;
+namespace Application.Entities.Customer;
 
 public class Customer
 {

@@ -1,13 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Application;
-using Application.DbContexts;
-using Application.DbContexts.v3;
-using Application.DbContexts.v8;
-using Application.Service;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddDbContext<MParkingEventDbContext>(opt =>
+builder.Services.AddDbContext<CardEventDbContext>(opt =>
     opt.UseSqlServer("Server=14.160.26.45,9999;Database=MPARKINGEVENT_LETO;User=hungnn;Password=Kztek@123456;TrustServerCertificate=True;Connection Timeout=30;"));
 
 builder.Services.AddDbContext<ResourceDbContext>(opt =>

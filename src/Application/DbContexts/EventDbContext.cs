@@ -1,18 +1,37 @@
-using Application.Entities;
+using Application.Entities.AccessKey;
+using Application.Entities.Customer;
+using Application.Entities.Device;
+using Application.Entities.Entry;
 using Microsoft.EntityFrameworkCore;
 
-namespace Application.DbContexts.v8;
+namespace Application;
 
-public class ResourceDbContext : DbContext
+public class EventDbContext : DbContext
 {
+    public DbSet<Entry> Entries { get; set; }
     public DbSet<Device> Devices { get; set; }
-    public DbSet<Customer> Customers { get; set; }
     public DbSet<AccessKey> AccessKeys { get; set; }
+    public DbSet<Customer> Customers { get; set; }
     
-    public ResourceDbContext(DbContextOptions<ResourceDbContext> options) : base(options) { }
-    
+    public EventDbContext(DbContextOptions<EventDbContext> options) : base(options) { }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<Entry>(entity =>
+        {
+            entity.ToTable("entries");
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.PlateNumber).HasColumnName("plate_number");
+            entity.Property(e => e.DeviceId).HasColumnName("device_id");
+            entity.Property(e => e.AccessKeyId).HasColumnName("access_key_id");
+            entity.Property(e => e.Exited).HasColumnName("exited");
+            entity.Property(e => e.Amount).HasColumnName("amount");
+            entity.Property(e => e.Deleted).HasColumnName("deleted");
+            entity.Property(e => e.CreatedBy).HasColumnName("created_by");
+            entity.Property(e => e.CreatedUtc).HasColumnName("created_utc");
+            entity.Property(e => e.CustomerId).HasColumnName("customer_id");
+        });
+        
         modelBuilder.Entity<Device>(entity =>
         {
             entity.ToTable("devices");
