@@ -1,4 +1,4 @@
-namespace Application.Entities.CardEvent;
+namespace Application.Entities;
 
 public class CardEvent
 {

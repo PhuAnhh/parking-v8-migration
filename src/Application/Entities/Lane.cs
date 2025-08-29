@@ -1,4 +1,4 @@
-namespace Application.Entities.Lane;
+namespace Application.Entities;
 
 public class Lane
 {

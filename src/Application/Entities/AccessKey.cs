@@ -1,4 +1,4 @@
-namespace Application.Entities.AccessKey;
+namespace Application.Entities;
 
 public class AccessKey
 {

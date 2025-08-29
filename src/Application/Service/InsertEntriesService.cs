@@ -1,30 +1,37 @@
-using Application.Entities.AccessKey;
-using Application.Entities.Customer;
-using Application.Entities.Device;
-using Application.Entities.Entry;
+using Application.DbContexts;
+using Application.DbContexts.v3;
+using Application.DbContexts.v8;
+using Application.Entities;
 using Microsoft.EntityFrameworkCore;
 
-namespace Application;
+namespace Application.Service;
 
 public class InsertEntriesService
 {
-    private readonly CardEventDbContext _cardEventDbContext;
+    private readonly MParkingEventDbContext _mParkingEventDbContext;
+    private readonly MParkingDbContext _mParkingDbContext;
     private readonly EventDbContext _eventDbContext;
     private readonly ResourceDbContext _resourceDbContext;
 
-    public InsertEntriesService(CardEventDbContext cardEventDbContext, EventDbContext eventDbContext,
-        ResourceDbContext resourceDbContext)
+    public InsertEntriesService(MParkingEventDbContext mParkingEventDbContext, EventDbContext eventDbContext,
+        ResourceDbContext resourceDbContext, MParkingDbContext mParkingDbContext)
     {
-        _cardEventDbContext = cardEventDbContext;
+        _mParkingEventDbContext = mParkingEventDbContext;
         _eventDbContext = eventDbContext;
         _resourceDbContext = resourceDbContext;
+        _mParkingDbContext = mParkingDbContext;
     }
 
     public async Task InsertEntries()
     {
         int insertedEntries = 0;
 
-        var cardEvents = await _cardEventDbContext.CardEvents.FromSqlRaw(@"
+        var cardEvent = await (from e in _mParkingEventDbContext.CardEvents.AsQueryable()
+            join c in _mParkingDbContext.Cards.AsQueryable()
+                on e.CardNumber equals c.CardNumber
+                );
+        
+        var cardEvents = await _mParkingEventDbContext.CardEvents.FromSqlRaw(@"
             SELECT 
                 e.Id, 
                 e.CardNumber, 

@@ -1,4 +1,4 @@
-namespace Application.Entities.Entry;
+namespace Application.Entities;
 
 public class Entry
 {
