@@ -1,4 +1,4 @@
-using Application.Entities;
+using Application.Entities.v8;
 using Microsoft.EntityFrameworkCore;
 
 namespace Application.DbContexts.v8;
@@ -30,6 +30,7 @@ public class ResourceDbContext : DbContext
             entity.Property(e => e.Type).HasColumnName("type");
             entity.Property(e => e.CollectionId).HasColumnName("collection_id");
             entity.Property(e => e.Status).HasColumnName("status");
+            entity.Property(e => e.Deleted).HasColumnName("deleted");
         });
         
         modelBuilder.Entity<Customer>(entity =>

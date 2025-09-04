@@ -1,4 +1,4 @@
-namespace Application.Entities;
+namespace Application.Entities.v8;
 
 public class AccessKey
 {
@@ -8,4 +8,5 @@ public class AccessKey
     public string Type { get; set; }
     public Guid? CollectionId { get; set; }
     public string Status { get; set; }
+    public bool Deleted { get; set; }
 }

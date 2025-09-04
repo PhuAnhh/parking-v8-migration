@@ -1,4 +1,4 @@
-namespace Application.Entities;
+namespace Application.Entities.v8;
 
 public class Device
 {
