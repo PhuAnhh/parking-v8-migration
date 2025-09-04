@@ -1,7 +1,7 @@
-using Application.Service;
+using Application.Services;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace parking_v8_migration;
+namespace Application;
 
 public partial class Main : Form
 {
@@ -36,8 +36,8 @@ public partial class Main : Form
             }
             else if (selected == 1)
             {
-                var insertService = scope.ServiceProvider.GetRequiredService<InsertExitsService>();
-                await insertService.InsertExits(fromDate, Log);
+                // var insertService = scope.ServiceProvider.GetRequiredService<InsertExitsService>();
+                // await insertService.InsertExits(fromDate, Log);
             }
 
             Log("Hoàn tất!");
@@ -45,7 +45,7 @@ public partial class Main : Form
         }
         catch (OperationCanceledException)
         {
-            Log($"Stop!");
+            Log("Stop!");
             MessageBox.Show("Stop", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
         catch (Exception ex)

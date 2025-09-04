@@ -1,4 +1,4 @@
-﻿namespace parking_v8_migration;
+﻿namespace Application;
 
 partial class Main
 {

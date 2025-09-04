@@ -1,13 +1,14 @@
+using System.Globalization;
 using Application.DbContexts.v3;
 using Application.DbContexts.v8;
+using Application.Entities.v3;
 using Application.Entities.v3.Models;
 using Application.Entities.v8;
 using Microsoft.EntityFrameworkCore;
-using System.Globalization;
 using Minio;
 using Minio.DataModel.Args;
 
-namespace Application.Service;
+namespace Application.Services;
 
 public class InsertEntriesService
 {
@@ -63,7 +64,7 @@ public class InsertEntriesService
             join e in entryCardEvents on c.CardNumber equals e.CardNumber
             join cg in cardGroups on c.CardGroupID equals cg.CardGroupID into cgGroup
             from cg in cgGroup.DefaultIfEmpty()
-            select new EntryCardEventDto
+            select new CardEvent
             {
                 Id = e.Id,
                 CardNumber = e.CardNumber,
@@ -82,35 +83,8 @@ public class InsertEntriesService
         {
             token.ThrowIfCancellationRequested();
 
-            log($"AccessKey: {ce.CardNumber}");
-            var eventAccessKey =
-                await _eventDbContext.AccessKeys.FirstOrDefaultAsync(a => a.Code.ToLower() == ce.CardNumber.ToLower());
-            if (eventAccessKey == null)
-            {
-                var resourceAccessKey =
-                    await _resourceDbContext.AccessKeys.FirstOrDefaultAsync(a =>
-                        a.Code.ToLower() == ce.CardNumber.ToLower());
-                if (resourceAccessKey != null)
-                {
-                    if (resourceAccessKey.Deleted)
-                    {
-                        log($"AccessKey {resourceAccessKey.Code} đã bị xóa");
-                        continue;
-                    }
-
-                    eventAccessKey = new AccessKey
-                    {
-                        Id = resourceAccessKey.Id,
-                        Code = resourceAccessKey.Code,
-                        Name = resourceAccessKey.Name,
-                        Type = resourceAccessKey.Type,
-                        CollectionId = resourceAccessKey.CollectionId,
-                        Status = resourceAccessKey.Status,
-                    };
-                    _eventDbContext.AccessKeys.Add(eventAccessKey);
-                    await _eventDbContext.SaveChangesAsync();
-                }
-            }
+            var accessKey = await MigrateAccessKey(ce, log);
+            if (accessKey == null) continue;
 
             log($"Customer: {ce.CustomerName}");
             var eventCustomer = await _eventDbContext.Customers.FirstOrDefaultAsync(c => c.Name == ce.CustomerName);
@@ -158,7 +132,7 @@ public class InsertEntriesService
                     Id = ce.Id,
                     PlateNumber = ce.PlateIn,
                     DeviceId = eventDevice.Id,
-                    AccessKeyId = eventAccessKey.Id,
+                    AccessKeyId = accessKey.Id,
                     Exited = false,
                     Amount = (long)ce.Moneys,
                     Deleted = false,
@@ -177,7 +151,7 @@ public class InsertEntriesService
                 bool success = await UploadImageToMinIO(localFile, objectKey, Console.WriteLine);
                 Console.WriteLine(success ? "Upload thành công" : "Upload thất bại");
             }
-            
+
             if (!string.IsNullOrEmpty(ce.PicDirIn))
             {
                 try
@@ -351,5 +325,38 @@ public class InsertEntriesService
     private string ExtractHourFromFileName(string fileName)
     {
         return fileName.Length >= 2 ? fileName.Substring(0, 2) : "00";
+    }
+
+    private async Task<AccessKey?> MigrateAccessKey(CardEvent ce, Action<string> log)
+    {
+        log($"AccessKey: {ce.CardNumber}");
+
+        var eventAccessKey = await _eventDbContext.AccessKeys.FirstOrDefaultAsync(a =>
+             a.Code.ToLower() == ce.CardNumber.ToLower());
+        if (eventAccessKey != null) return eventAccessKey;
+
+        var resourceAccessKey = await _resourceDbContext.AccessKeys.FirstOrDefaultAsync(a =>
+             a.Code.ToLower() == ce.CardNumber.ToLower());
+        if (resourceAccessKey == null) return null;
+
+        if (resourceAccessKey.Deleted)
+        {
+            log($"AccessKey {resourceAccessKey.Code} đã bị xóa");
+            return null;
+        }
+
+        eventAccessKey = new AccessKey
+        {
+            Id = resourceAccessKey.Id,
+            Code = resourceAccessKey.Code,
+            Name = resourceAccessKey.Name,
+            Type = resourceAccessKey.Type,
+            CollectionId = resourceAccessKey.CollectionId,
+            Status = resourceAccessKey.Status,
+        };
+        _eventDbContext.AccessKeys.Add(eventAccessKey);
+        await _eventDbContext.SaveChangesAsync();
+
+        return eventAccessKey;
     }
 }

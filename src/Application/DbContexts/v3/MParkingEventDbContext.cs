@@ -7,7 +7,7 @@ namespace Application.DbContexts.v3;
 public class MParkingEventDbContext : DbContext
 {
     public DbSet<EntryCardEventDto> EntryCardEventDtos { get; set; }
-    public DbSet<ExitCardEventDto> ExitCardEventDtos { get; set; }
+    // public DbSet<ExitCardEventDto> ExitCardEventDtos { get; set; }
     public DbSet<CardEvent>  CardEvents { get; set; }
     
     public MParkingEventDbContext(DbContextOptions<MParkingEventDbContext> options) : base(options) { }
@@ -31,22 +31,22 @@ public class MParkingEventDbContext : DbContext
             entity.Property(ce => ce.IsDelete).HasColumnName("IsDelete");
         });
 
-        modelBuilder.Entity<ExitCardEventDto>(entity =>
-        {
-            entity.ToView("tblCardEvent", "dbo");
-            entity.Property(ce => ce.Id).HasColumnName("Id");
-            entity.Property(ce => ce.EventCode).HasColumnName("EventCode");
-            entity.Property(ce => ce.CardNumber).HasColumnName("CardNumber");
-            entity.Property(ce => ce.DateTimeOut).HasColumnName("DatetimeOut");
-            entity.Property(ce => ce.LaneIDOut).HasColumnName("LaneIDOut");
-            entity.Property(ce => ce.UserIDOut).HasColumnName("UserIDOut");
-            entity.Property(ce => ce.PlateOut).HasColumnName("PlateOut");
-            entity.Property(ce => ce.Moneys).HasColumnName("Moneys")
-                .HasColumnType("numeric(18, 0)")
-                .HasConversion<long>();
-            entity.Property(ce => ce.CustomerName).HasColumnName("CustomerName");
-            entity.Property(ce => ce.IsDelete).HasColumnName("IsDelete");
-            entity.Property(ce => ce.ReducedMoney).HasColumnName("ReducedMoney");
-        });
+        // modelBuilder.Entity<ExitCardEventDto>(entity =>
+        // {
+        //     entity.ToView("tblCardEvent", "dbo");
+        //     entity.Property(ce => ce.Id).HasColumnName("Id");
+        //     entity.Property(ce => ce.EventCode).HasColumnName("EventCode");
+        //     entity.Property(ce => ce.CardNumber).HasColumnName("CardNumber");
+        //     entity.Property(ce => ce.DateTimeOut).HasColumnName("DatetimeOut");
+        //     entity.Property(ce => ce.LaneIDOut).HasColumnName("LaneIDOut");
+        //     entity.Property(ce => ce.UserIDOut).HasColumnName("UserIDOut");
+        //     entity.Property(ce => ce.PlateOut).HasColumnName("PlateOut");
+        //     entity.Property(ce => ce.Moneys).HasColumnName("Moneys")
+        //         .HasColumnType("numeric(18, 0)")
+        //         .HasConversion<long>();
+        //     entity.Property(ce => ce.CustomerName).HasColumnName("CustomerName");
+        //     entity.Property(ce => ce.IsDelete).HasColumnName("IsDelete");
+        //     entity.Property(ce => ce.ReducedMoney).HasColumnName("ReducedMoney");
+        // });
     }
 }
