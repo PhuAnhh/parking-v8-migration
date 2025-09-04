@@ -42,7 +42,6 @@ public class InsertEntriesService
         int insertedEntries = 0;
         int skippedEntries = 0;
 
-        // Ensure bucket exists
         await EnsureBucketExists(log);
 
         var cards = await _mParkingDbContext.Cards
@@ -86,43 +85,9 @@ public class InsertEntriesService
             var accessKey = await MigrateAccessKey(ce, log);
             if (accessKey == null) continue;
 
-            log($"Customer: {ce.CustomerName}");
-            var eventCustomer = await _eventDbContext.Customers.FirstOrDefaultAsync(c => c.Name == ce.CustomerName);
-            if (eventCustomer == null)
-            {
-                var resourceCustomer =
-                    await _resourceDbContext.Customers.FirstOrDefaultAsync(c => c.Name == ce.CustomerName);
-                if (resourceCustomer != null)
-                {
-                    eventCustomer = new Customer
-                    {
-                        Id = resourceCustomer.Id,
-                        Name = resourceCustomer.Name,
-                        Code = resourceCustomer.Code
-                    };
-                    _eventDbContext.Customers.Add(eventCustomer);
-                    await _eventDbContext.SaveChangesAsync();
-                }
-            }
-
-            log($"Lane: {ce.LaneIDIn}");
-            var eventDevice = await _eventDbContext.Devices.FirstOrDefaultAsync(d => d.Id == Guid.Parse(ce.LaneIDIn));
-            if (eventDevice == null)
-            {
-                var resourceDevice =
-                    await _resourceDbContext.Devices.FirstOrDefaultAsync(d => d.Id == Guid.Parse(ce.LaneIDIn));
-                if (resourceDevice != null)
-                {
-                    eventDevice = new Device
-                    {
-                        Id = resourceDevice.Id,
-                        Name = resourceDevice.Name,
-                        Type = resourceDevice.Type,
-                    };
-                    _eventDbContext.Devices.Add(eventDevice);
-                    await _eventDbContext.SaveChangesAsync();
-                }
-            }
+            var device = await MigrateDevice(ce, log);
+            
+            var customer = await MigrateCustomer(ce, log);
 
             var existedEntry = await _eventDbContext.Entries.AnyAsync(e => e.Id == ce.Id);
             if (!existedEntry)
@@ -131,25 +96,19 @@ public class InsertEntriesService
                 {
                     Id = ce.Id,
                     PlateNumber = ce.PlateIn,
-                    DeviceId = eventDevice.Id,
+                    DeviceId = device.Id,
                     AccessKeyId = accessKey.Id,
                     Exited = false,
                     Amount = (long)ce.Moneys,
                     Deleted = false,
                     CreatedBy = "admin",
                     CreatedUtc = DateTime.SpecifyKind(ce.DatetimeIn, DateTimeKind.Utc),
-                    CustomerId = eventCustomer?.Id,
+                    CustomerId = customer?.Id,
                 };
                 _eventDbContext.Entries.Add(entry);
                 await _eventDbContext.SaveChangesAsync();
 
                 insertedEntries++;
-
-                var localFile =
-                    @"\\192.168.21.88\pic\20-08-2025\06h26m27s_de7de524-bfe8-49dc-af38-ebc5211eb434PLATEIN.JPG";
-                var objectKey = "250825/06/de7de524-bfe8-49dc-af38-ebc5211eb434.jpg";
-                bool success = await UploadImageToMinIO(localFile, objectKey, Console.WriteLine);
-                Console.WriteLine(success ? "Upload thành công" : "Upload thất bại");
             }
 
             if (!string.IsNullOrEmpty(ce.PicDirIn))
@@ -227,7 +186,7 @@ public class InsertEntriesService
     }
 
     private async Task EnsureBucketExists(Action<string> log)
-    {
+    {   
         try
         {
             var bucketExistsArgs = new BucketExistsArgs().WithBucket(BucketName);
@@ -358,5 +317,63 @@ public class InsertEntriesService
         await _eventDbContext.SaveChangesAsync();
 
         return eventAccessKey;
+    }
+
+    private async Task<Device?> MigrateDevice(CardEvent ce, Action<string> log)
+    {
+        log($"Lane: {ce.LaneIDIn}");
+        
+        var eventDevice = await _eventDbContext.Devices
+            .FirstOrDefaultAsync(d => d.Id == Guid.Parse(ce.LaneIDIn));
+        
+        if (eventDevice != null) 
+            return eventDevice;
+
+        var resourceDevice = await _resourceDbContext.Devices
+            .FirstOrDefaultAsync(d => d.Id == Guid.Parse(ce.LaneIDIn));
+        
+        if (resourceDevice == null) 
+            return null;
+
+        eventDevice = new Device
+        {
+            Id = resourceDevice.Id,
+            Name = resourceDevice.Name,
+            Type = resourceDevice.Type,
+        };
+        
+        _eventDbContext.Devices.Add(eventDevice);
+        await _eventDbContext.SaveChangesAsync();
+        
+        return eventDevice;
+    }
+    
+    private async Task<Customer?> MigrateCustomer(CardEvent ce, Action<string> log)
+    {
+        log($"Customer: {ce.CustomerName}");
+        
+        var eventCustomer = await _eventDbContext.Customers
+            .FirstOrDefaultAsync(c => c.Name == ce.CustomerName);
+        
+        if (eventCustomer != null) 
+            return eventCustomer;
+
+        var resourceCustomer = await _resourceDbContext.Customers
+            .FirstOrDefaultAsync(c => c.Name == ce.CustomerName);
+        
+        if (resourceCustomer == null) 
+            return null;
+
+        eventCustomer = new Customer
+        {
+            Id = resourceCustomer.Id,
+            Name = resourceCustomer.Name,
+            Code = resourceCustomer.Code
+        };
+        
+        _eventDbContext.Customers.Add(eventCustomer);
+        await _eventDbContext.SaveChangesAsync();
+        
+        return eventCustomer;
     }
 }
