@@ -56,7 +56,7 @@ partial class Main
         btnStart.Name = "btnStart";
         btnStart.Size = new System.Drawing.Size(307, 39);
         btnStart.TabIndex = 0;
-        btnStart.Text = "Start 🚀";
+        btnStart.Text = "▶ Start";
         btnStart.UseVisualStyleBackColor = false;
         btnStart.Click += btnStart_Click;
         // 
@@ -113,7 +113,7 @@ partial class Main
         btnStop.Name = "btnStop";
         btnStop.Size = new System.Drawing.Size(307, 39);
         btnStop.TabIndex = 4;
-        btnStop.Text = "Stop 🛑";
+        btnStop.Text = "⬛ Stop";
         btnStop.UseVisualStyleBackColor = false;
         btnStop.Click += btnStop_Click;
         // 

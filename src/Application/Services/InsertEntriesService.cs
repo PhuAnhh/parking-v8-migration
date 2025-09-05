@@ -2,7 +2,6 @@ using System.Globalization;
 using Application.DbContexts.v3;
 using Application.DbContexts.v8;
 using Application.Entities.v3;
-using Application.Entities.v3.Models;
 using Application.Entities.v8;
 using Microsoft.EntityFrameworkCore;
 using Minio;
@@ -16,29 +15,28 @@ public class InsertEntriesService
     private readonly MParkingDbContext _mParkingDbContext;
     private readonly EventDbContext _eventDbContext;
     private readonly ResourceDbContext _resourceDbContext;
+    private readonly MinioSettings _minioSettings;
     private readonly IMinioClient _minioClient;
 
-    private const string BucketName = "image";
-    private const string MinioEndpoint = "192.168.21.100:9000";
-    private const string MinioAccessKey = "admin";
-    private const string MinioSecretKey = "Pass1234!";
-
     public InsertEntriesService(MParkingEventDbContext mParkingEventDbContext, EventDbContext eventDbContext,
-        ResourceDbContext resourceDbContext, MParkingDbContext mParkingDbContext, IMinioClient minioClient = null)
+        ResourceDbContext resourceDbContext, MParkingDbContext mParkingDbContext, MinioSettings minioSettings)
     {
         _mParkingEventDbContext = mParkingEventDbContext;
         _eventDbContext = eventDbContext;
         _resourceDbContext = resourceDbContext;
         _mParkingDbContext = mParkingDbContext;
+        _minioSettings = minioSettings;
 
-        _minioClient = minioClient ?? new MinioClient()
-            .WithEndpoint(MinioEndpoint)
-            .WithCredentials(MinioAccessKey, MinioSecretKey)
+        _minioClient = new MinioClient()
+            .WithEndpoint(_minioSettings.Endpoint)
+            .WithCredentials(_minioSettings.AccessKey, _minioSettings.SecretKey)
             .Build();
     }
 
     public async Task InsertEntries(DateTime fromDate, Action<string> log, CancellationToken token)
     {
+        log($"Kết nối MinIO [{_minioSettings.Bucket}] thành công!");
+
         int insertedEntries = 0;
         int skippedEntries = 0;
 
@@ -86,7 +84,7 @@ public class InsertEntriesService
             if (accessKey == null) continue;
 
             var device = await MigrateDevice(ce, log);
-            
+
             var customer = await MigrateCustomer(ce, log);
 
             var existedEntry = await _eventDbContext.Entries.AnyAsync(e => e.Id == ce.Id);
@@ -186,17 +184,17 @@ public class InsertEntriesService
     }
 
     private async Task EnsureBucketExists(Action<string> log)
-    {   
+    {
         try
         {
-            var bucketExistsArgs = new BucketExistsArgs().WithBucket(BucketName);
+            var bucketExistsArgs = new BucketExistsArgs().WithBucket(_minioSettings.Bucket);
             var bucketExists = await _minioClient.BucketExistsAsync(bucketExistsArgs);
 
             if (!bucketExists)
             {
-                var makeBucketArgs = new MakeBucketArgs().WithBucket(BucketName);
+                var makeBucketArgs = new MakeBucketArgs().WithBucket(_minioSettings.Bucket);
                 await _minioClient.MakeBucketAsync(makeBucketArgs);
-                log($"Created bucket: {BucketName}");
+                log($"Created bucket: {_minioSettings}");
             }
         }
         catch (Exception ex)
@@ -219,7 +217,7 @@ public class InsertEntriesService
             try
             {
                 var statObjectArgs = new StatObjectArgs()
-                    .WithBucket(BucketName)
+                    .WithBucket(_minioSettings.Bucket)
                     .WithObject(objectKey);
                 await _minioClient.StatObjectAsync(statObjectArgs);
 
@@ -233,7 +231,7 @@ public class InsertEntriesService
             using var fileStream = File.OpenRead(localFilePath);
 
             var putObjectArgs = new PutObjectArgs()
-                .WithBucket(BucketName)
+                .WithBucket(_minioSettings.Bucket)
                 .WithObject(objectKey)
                 .WithStreamData(fileStream)
                 .WithObjectSize(fileStream.Length)
@@ -291,11 +289,11 @@ public class InsertEntriesService
         log($"AccessKey: {ce.CardNumber}");
 
         var eventAccessKey = await _eventDbContext.AccessKeys.FirstOrDefaultAsync(a =>
-             a.Code.ToLower() == ce.CardNumber.ToLower());
+            a.Code.ToLower() == ce.CardNumber.ToLower());
         if (eventAccessKey != null) return eventAccessKey;
 
         var resourceAccessKey = await _resourceDbContext.AccessKeys.FirstOrDefaultAsync(a =>
-             a.Code.ToLower() == ce.CardNumber.ToLower());
+            a.Code.ToLower() == ce.CardNumber.ToLower());
         if (resourceAccessKey == null) return null;
 
         if (resourceAccessKey.Deleted)
@@ -322,17 +320,17 @@ public class InsertEntriesService
     private async Task<Device?> MigrateDevice(CardEvent ce, Action<string> log)
     {
         log($"Lane: {ce.LaneIDIn}");
-        
+
         var eventDevice = await _eventDbContext.Devices
             .FirstOrDefaultAsync(d => d.Id == Guid.Parse(ce.LaneIDIn));
-        
-        if (eventDevice != null) 
+
+        if (eventDevice != null)
             return eventDevice;
 
         var resourceDevice = await _resourceDbContext.Devices
             .FirstOrDefaultAsync(d => d.Id == Guid.Parse(ce.LaneIDIn));
-        
-        if (resourceDevice == null) 
+
+        if (resourceDevice == null)
             return null;
 
         eventDevice = new Device
@@ -341,27 +339,27 @@ public class InsertEntriesService
             Name = resourceDevice.Name,
             Type = resourceDevice.Type,
         };
-        
+
         _eventDbContext.Devices.Add(eventDevice);
         await _eventDbContext.SaveChangesAsync();
-        
+
         return eventDevice;
     }
-    
+
     private async Task<Customer?> MigrateCustomer(CardEvent ce, Action<string> log)
     {
         log($"Customer: {ce.CustomerName}");
-        
+
         var eventCustomer = await _eventDbContext.Customers
             .FirstOrDefaultAsync(c => c.Name == ce.CustomerName);
-        
-        if (eventCustomer != null) 
+
+        if (eventCustomer != null)
             return eventCustomer;
 
         var resourceCustomer = await _resourceDbContext.Customers
             .FirstOrDefaultAsync(c => c.Name == ce.CustomerName);
-        
-        if (resourceCustomer == null) 
+
+        if (resourceCustomer == null)
             return null;
 
         eventCustomer = new Customer
@@ -370,10 +368,10 @@ public class InsertEntriesService
             Name = resourceCustomer.Name,
             Code = resourceCustomer.Code
         };
-        
+
         _eventDbContext.Customers.Add(eventCustomer);
         await _eventDbContext.SaveChangesAsync();
-        
+
         return eventCustomer;
     }
 }

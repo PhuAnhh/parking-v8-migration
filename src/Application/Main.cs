@@ -36,22 +36,22 @@ public partial class Main : Form
             }
             else if (selected == 1)
             {
-                // var insertService = scope.ServiceProvider.GetRequiredService<InsertExitsService>();
-                // await insertService.InsertExits(fromDate, Log);
+                var insertService = scope.ServiceProvider.GetRequiredService<InsertExitsService>();
+                await insertService.InsertExits(fromDate, Log);
             }
 
             Log("Hoàn tất!");
-            MessageBox.Show("Success", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            MessageBox.Show("Success", "✔ Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
         catch (OperationCanceledException)
         {
             Log("Stop!");
-            MessageBox.Show("Stop", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            MessageBox.Show("Stop", "⚠ Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
         catch (Exception ex)
         {
             Log($"Lỗi: {ex}");
-            MessageBox.Show(ex.ToString(), "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            MessageBox.Show(ex.ToString(), "✖ Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
         finally
         {

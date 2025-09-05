@@ -10,6 +10,7 @@ public class CardEvent
     public string LaneIDIn { get; set; }
     public string LaneIDOut { get; set; }
     public string? PicDirIn { get; set; }
+    public string? PicDirOut { get; set; }
     public string UserIDIn { get; set; }
     public string UserIDOut { get; set; }
     public string PlateIn  { get; set; }
