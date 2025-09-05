@@ -18,8 +18,12 @@ public class InsertEntriesService
     private readonly MinioSettings _minioSettings;
     private readonly IMinioClient _minioClient;
 
-    public InsertEntriesService(MParkingEventDbContext mParkingEventDbContext, EventDbContext eventDbContext,
-        ResourceDbContext resourceDbContext, MParkingDbContext mParkingDbContext, MinioSettings minioSettings)
+    public InsertEntriesService(
+        MParkingEventDbContext mParkingEventDbContext,
+        MParkingDbContext mParkingDbContext,
+        EventDbContext eventDbContext,
+        ResourceDbContext resourceDbContext,
+        MinioSettings minioSettings)
     {
         _mParkingEventDbContext = mParkingEventDbContext;
         _eventDbContext = eventDbContext;
@@ -81,7 +85,8 @@ public class InsertEntriesService
             token.ThrowIfCancellationRequested();
 
             var accessKey = await MigrateAccessKey(ce, log);
-            if (accessKey == null) continue;
+            if (accessKey == null)
+                continue;
 
             var device = await MigrateDevice(ce, log);
 
@@ -111,65 +116,7 @@ public class InsertEntriesService
 
             if (!string.IsNullOrEmpty(ce.PicDirIn))
             {
-                try
-                {
-                    var plateObjectKey = BuildImageObjectKey(ce.PicDirIn);
-                    var vehicleObjectKey = BuildImageObjectKey(ce.PicDirIn);
-
-                    var existedPlateImage = await _eventDbContext.EntryImages
-                        .AnyAsync(img => img.EntryId == ce.Id && img.Type == "PLATE_NUMBER");
-
-                    if (!existedPlateImage)
-                    {
-                        var plateUploadSuccess = await UploadImageToMinIO(ce.PicDirIn, plateObjectKey, log);
-
-                        if (plateUploadSuccess)
-                        {
-                            var entryImagePlate = new EntryImage
-                            {
-                                EntryId = ce.Id,
-                                ObjectKey = plateObjectKey,
-                                Type = "PLATE_NUMBER"
-                            };
-                            _eventDbContext.EntryImages.Add(entryImagePlate);
-                            log($"Plate image uploaded: {plateObjectKey}");
-                        }
-                        else
-                        {
-                            log($"Failed to upload plate image: {ce.PicDirIn}");
-                        }
-                    }
-
-                    var existedVehicleImage = await _eventDbContext.EntryImages
-                        .AnyAsync(img => img.EntryId == ce.Id && img.Type == "VEHICLE");
-
-                    if (!existedVehicleImage)
-                    {
-                        var vehicleUploadSuccess = await UploadImageToMinIO(ce.PicDirIn, vehicleObjectKey, log);
-
-                        if (vehicleUploadSuccess)
-                        {
-                            var entryImageVehicle = new EntryImage
-                            {
-                                EntryId = ce.Id,
-                                ObjectKey = vehicleObjectKey,
-                                Type = "VEHICLE"
-                            };
-                            _eventDbContext.EntryImages.Add(entryImageVehicle);
-                            log($"Vehicle image uploaded: {vehicleObjectKey}");
-                        }
-                        else
-                        {
-                            log($"Failed to upload vehicle image: {ce.PicDirIn}");
-                        }
-                    }
-
-                    await _eventDbContext.SaveChangesAsync();
-                }
-                catch (Exception ex)
-                {
-                    log($"Lỗi xử lý ảnh cho entry {ce.Id}: {ex.Message}");
-                }
+                await ProcessEntryImages(ce, log);
             }
             else
             {
@@ -177,10 +124,58 @@ public class InsertEntriesService
             }
         }
 
-        log("---------- Kết quả ----------");
-        log($"Tổng {cardEvents.Count} sự kiện");
-        log($"Đã di chuyển {insertedEntries} sự kiện");
-        log($"Tồn tại {skippedEntries} sự kiện");
+        log("---------- Processing Result ----------");
+        log($"Total number of events: {cardEvents.Count}");
+        log($"Events successfully migrated: {insertedEntries}");
+        log($"Events already existed (skipped): {skippedEntries}");
+    }
+
+    private async Task ProcessEntryImages(CardEvent cardEvent, Action<string> log)
+    {
+        try
+        {
+            await ProcessImageType(cardEvent, "PLATE_NUMBER", log);
+            await ProcessImageType(cardEvent, "VEHICLE", log);
+            await _eventDbContext.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            log($"Failed to process image for entry {cardEvent.Id}: {ex.Message}");
+        }
+    }
+
+    private async Task ProcessImageType(CardEvent cardEvent, string imageType, Action<string> log)
+    {
+        var objectKey = BuildImageObjectKey(cardEvent.PicDirIn);
+
+        var existedImage = await _eventDbContext.EntryImages
+            .AnyAsync(img => img.EntryId == cardEvent.Id && img.Type == imageType);
+
+        if (existedImage)
+            return;
+
+        var uploadSuccess = await UploadImageToMinIO(cardEvent.PicDirIn, objectKey, log);
+
+        if (uploadSuccess)
+        {
+            await AddEntryImage(cardEvent.Id, objectKey, imageType);
+            log($"{imageType} image uploaded: {objectKey}");
+        }
+        else
+        {
+            log($"Failed to upload {imageType} image: {cardEvent.PicDirIn}");
+        }
+    }
+
+    private async Task AddEntryImage(Guid entryId, string objectKey, string imageType)
+    {
+        var entryImage = new EntryImage
+        {
+            EntryId = entryId,
+            ObjectKey = objectKey,
+            Type = imageType
+        };
+        _eventDbContext.EntryImages.Add(entryImage);
     }
 
     private async Task EnsureBucketExists(Action<string> log)
@@ -253,13 +248,9 @@ public class InsertEntriesService
     {
         var pathParts = picDirIn.Split('\\', StringSplitOptions.RemoveEmptyEntries);
         var fileName = Path.GetFileName(picDirIn);
-
         var dateFolder = pathParts.Length >= 3 ? pathParts[^2] : null;
-
         var dateInYyMMdd = ConvertDateToYyMMdd(dateFolder);
-
         var hour = ExtractHourFromFileName(fileName);
-
         var guidPart = Guid.NewGuid().ToString();
 
         return $"{dateInYyMMdd}/{hour}/{guidPart}.jpg";
@@ -270,8 +261,7 @@ public class InsertEntriesService
         if (string.IsNullOrEmpty(dateFolder))
             return DateTime.Now.ToString("yyMMdd");
 
-        if (DateTime.TryParseExact(dateFolder, "dd-MM-yyyy", null,
-                DateTimeStyles.None, out DateTime parsedDate))
+        if (DateTime.TryParseExact(dateFolder, "dd-MM-yyyy", null, DateTimeStyles.None, out DateTime parsedDate))
         {
             return parsedDate.ToString("yyMMdd");
         }
@@ -288,17 +278,21 @@ public class InsertEntriesService
     {
         log($"AccessKey: {ce.CardNumber}");
 
-        var eventAccessKey = await _eventDbContext.AccessKeys.FirstOrDefaultAsync(a =>
-            a.Code.ToLower() == ce.CardNumber.ToLower());
-        if (eventAccessKey != null) return eventAccessKey;
+        var eventAccessKey = await _eventDbContext.AccessKeys
+            .FirstOrDefaultAsync(a => a.Code.ToLower() == ce.CardNumber.ToLower());
 
-        var resourceAccessKey = await _resourceDbContext.AccessKeys.FirstOrDefaultAsync(a =>
-            a.Code.ToLower() == ce.CardNumber.ToLower());
-        if (resourceAccessKey == null) return null;
+        if (eventAccessKey != null)
+            return eventAccessKey;
+
+        var resourceAccessKey = await _resourceDbContext.AccessKeys
+            .FirstOrDefaultAsync(a => a.Code.ToLower() == ce.CardNumber.ToLower());
+
+        if (resourceAccessKey == null)
+            return null;
 
         if (resourceAccessKey.Deleted)
         {
-            log($"AccessKey {resourceAccessKey.Code} đã bị xóa");
+            log($"AccessKey {resourceAccessKey.Code} has been deleted");
             return null;
         }
 
@@ -311,6 +305,7 @@ public class InsertEntriesService
             CollectionId = resourceAccessKey.CollectionId,
             Status = resourceAccessKey.Status,
         };
+
         _eventDbContext.AccessKeys.Add(eventAccessKey);
         await _eventDbContext.SaveChangesAsync();
 
