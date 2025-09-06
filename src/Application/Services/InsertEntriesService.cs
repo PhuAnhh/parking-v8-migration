@@ -39,7 +39,7 @@ public class InsertEntriesService
 
     public async Task InsertEntries(DateTime fromDate, Action<string> log, CancellationToken token)
     {
-        log($"Kết nối MinIO [{_minioSettings.Bucket}] thành công!");
+        log("Successfully connected to MinIO bucket [{{_minioSettings.Bucket}}]!");
 
         int insertedEntries = 0;
         int skippedEntries = 0;

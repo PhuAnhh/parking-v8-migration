@@ -50,7 +50,7 @@ public partial class Main : Form
         }
         catch (Exception ex)
         {
-            Log($"Lỗi: {ex}");
+            Log($"Error: {ex}");
             MessageBox.Show(ex.ToString(), "✖ Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
         finally
