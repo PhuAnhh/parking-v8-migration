@@ -105,7 +105,7 @@ public class InsertEntriesService
                     Amount = (long)ce.Moneys,
                     Deleted = false,
                     CreatedBy = "admin",
-                    CreatedUtc = DateTime.SpecifyKind(ce.DatetimeIn, DateTimeKind.Utc),
+                    CreatedUtc = TimeZoneInfo.ConvertTimeToUtc(ce.DatetimeIn, TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time")),
                     CustomerId = customer?.Id,
                 };
                 _eventDbContext.Entries.Add(entry);

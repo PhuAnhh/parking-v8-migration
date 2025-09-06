@@ -18,7 +18,7 @@ public partial class Main : Form
     {
         btnStart.Enabled = false;
         btnStop.Enabled = true;
-        Log("Bắt đầu ...");
+        Log("Let's get started ...");
 
         _cancellationTokenSource = new CancellationTokenSource();
         var token = _cancellationTokenSource.Token;
@@ -40,7 +40,7 @@ public partial class Main : Form
                 await insertService.InsertExits(fromDate, Log);
             }
 
-            Log("Hoàn tất!");
+            Log("It's over!");
             MessageBox.Show("Success", "✔ Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
         catch (OperationCanceledException)
