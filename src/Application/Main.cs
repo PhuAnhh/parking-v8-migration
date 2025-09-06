@@ -37,10 +37,9 @@ public partial class Main : Form
             else if (selected == 1)
             {
                 var insertService = scope.ServiceProvider.GetRequiredService<InsertExitsService>();
-                await insertService.InsertExits(fromDate, Log);
+                await insertService.InsertExits(fromDate, Log, token);
             }
 
-            Log("It's over!");
             MessageBox.Show("Success", "✔ Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
         catch (OperationCanceledException)

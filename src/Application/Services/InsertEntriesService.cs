@@ -39,7 +39,7 @@ public class InsertEntriesService
 
     public async Task InsertEntries(DateTime fromDate, Action<string> log, CancellationToken token)
     {
-        log("Successfully connected to MinIO bucket [{{_minioSettings.Bucket}}]!");
+        log($"Successfully connected to MinIO bucket [{_minioSettings.Bucket}]!");
 
         int insertedEntries = 0;
         int skippedEntries = 0;
@@ -105,7 +105,8 @@ public class InsertEntriesService
                     Amount = (long)ce.Moneys,
                     Deleted = false,
                     CreatedBy = "admin",
-                    CreatedUtc = TimeZoneInfo.ConvertTimeToUtc(ce.DatetimeIn, TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time")),
+                    CreatedUtc = TimeZoneInfo.ConvertTimeToUtc(ce.DatetimeIn,
+                        TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time")),
                     CustomerId = customer?.Id,
                 };
                 _eventDbContext.Entries.Add(entry);
@@ -113,14 +114,14 @@ public class InsertEntriesService
 
                 insertedEntries++;
             }
+            else
+            {
+                skippedEntries++;
+            }
 
             if (!string.IsNullOrEmpty(ce.PicDirIn))
             {
                 await ProcessEntryImages(ce, log);
-            }
-            else
-            {
-                skippedEntries++;
             }
         }
 

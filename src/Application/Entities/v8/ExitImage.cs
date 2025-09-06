@@ -1,8 +1,8 @@
 namespace Application.Entities.v8;
 
-public class EntryImage
+public class ExitImage
 {
-    public Guid EntryId { get; set; }
+    public Guid ExitId { get; set; }
     public string ObjectKey { get; set; }
     public string Type { get; set; }
 }
