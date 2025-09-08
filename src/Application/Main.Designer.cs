@@ -129,7 +129,7 @@ partial class Main
         Icon = ((System.Drawing.Icon)resources.GetObject("$this.Icon"));
         Location = new System.Drawing.Point(19, 19);
         StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-        Text = "Parking-v8-migration";
+        Text = "Parking v8 Migration";
         ResumeLayout(false);
         PerformLayout();
     }

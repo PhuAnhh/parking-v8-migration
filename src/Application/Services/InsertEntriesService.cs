@@ -1,4 +1,3 @@
-using System.Globalization;
 using Application.DbContexts.v3;
 using Application.DbContexts.v8;
 using Application.Entities.v3;
@@ -113,15 +112,15 @@ public class InsertEntriesService
                 await _eventDbContext.SaveChangesAsync();
 
                 insertedEntries++;
+
+                if (!string.IsNullOrEmpty(ce.PicDirIn))
+                {
+                    await ProcessEntryImages(ce, entry.CreatedUtc, log);
+                }
             }
             else
             {
                 skippedEntries++;
-            }
-
-            if (!string.IsNullOrEmpty(ce.PicDirIn))
-            {
-                await ProcessEntryImages(ce, log);
             }
         }
 
@@ -131,12 +130,12 @@ public class InsertEntriesService
         log($"Events already existed (skipped): {skippedEntries}");
     }
 
-    private async Task ProcessEntryImages(CardEvent cardEvent, Action<string> log)
+    private async Task ProcessEntryImages(CardEvent cardEvent, DateTime createdUtc, Action<string> log)
     {
         try
         {
-            await ProcessImageType(cardEvent, "PLATE_NUMBER", log);
-            await ProcessImageType(cardEvent, "VEHICLE", log);
+            await ProcessImageType(cardEvent, createdUtc, "PLATE_NUMBER", log);
+            await ProcessImageType(cardEvent, createdUtc, "VEHICLE", log);
             await _eventDbContext.SaveChangesAsync();
         }
         catch (Exception ex)
@@ -145,9 +144,9 @@ public class InsertEntriesService
         }
     }
 
-    private async Task ProcessImageType(CardEvent cardEvent, string imageType, Action<string> log)
+    private async Task ProcessImageType(CardEvent cardEvent, DateTime createdUtc, string imageType, Action<string> log)
     {
-        var objectKey = BuildImageObjectKey(cardEvent.PicDirIn);
+        var objectKey = BuildImageObjectKey(createdUtc);
 
         var existedImage = await _eventDbContext.EntryImages
             .AnyAsync(img => img.EntryId == cardEvent.Id && img.Type == imageType);
@@ -245,34 +244,13 @@ public class InsertEntriesService
         }
     }
 
-    private string BuildImageObjectKey(string picDirIn)
+    private string BuildImageObjectKey(DateTime createdUtc)
     {
-        var pathParts = picDirIn.Split('\\', StringSplitOptions.RemoveEmptyEntries);
-        var fileName = Path.GetFileName(picDirIn);
-        var dateFolder = pathParts.Length >= 3 ? pathParts[^2] : null;
-        var dateInYyMMdd = ConvertDateToYyMMdd(dateFolder);
-        var hour = ExtractHourFromFileName(fileName);
+        var dateInYyMMdd = createdUtc.ToString("yyMMdd");
+        var hour = createdUtc.ToString("HH");
         var guidPart = Guid.NewGuid().ToString();
 
         return $"{dateInYyMMdd}/{hour}/{guidPart}.jpg";
-    }
-
-    private string ConvertDateToYyMMdd(string dateFolder)
-    {
-        if (string.IsNullOrEmpty(dateFolder))
-            return DateTime.Now.ToString("yyMMdd");
-
-        if (DateTime.TryParseExact(dateFolder, "dd-MM-yyyy", null, DateTimeStyles.None, out DateTime parsedDate))
-        {
-            return parsedDate.ToString("yyMMdd");
-        }
-
-        return DateTime.Now.ToString("yyMMdd");
-    }
-
-    private string ExtractHourFromFileName(string fileName)
-    {
-        return fileName.Length >= 2 ? fileName.Substring(0, 2) : "00";
     }
 
     private async Task<AccessKey?> MigrateAccessKey(CardEvent ce, Action<string> log)
