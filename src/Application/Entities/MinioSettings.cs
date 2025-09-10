@@ -1,4 +1,4 @@
-namespace Application.Entities.v8;
+namespace Application.Entities;
 
 public class MinioSettings
 {

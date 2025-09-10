@@ -11,6 +11,7 @@ partial class Main
     private System.Windows.Forms.DateTimePicker dtp;
     private System.Windows.Forms.TextBox txtLog;
     private System.Windows.Forms.ComboBox cmbEvent;
+    private System.Windows.Forms.ToolTip tipDateTime;
 
     /// <summary>
     ///  Clean up any resources being used.
@@ -34,17 +35,18 @@ partial class Main
     /// </summary>
     private void InitializeComponent()
     {
+        components = new System.ComponentModel.Container();
         System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Main));
         btnStart = new System.Windows.Forms.Button();
         dtp = new System.Windows.Forms.DateTimePicker();
         txtLog = new System.Windows.Forms.TextBox();
         cmbEvent = new System.Windows.Forms.ComboBox();
         btnStop = new System.Windows.Forms.Button();
+        tipDateTime = new System.Windows.Forms.ToolTip(components);
         SuspendLayout();
         // 
         // btnStart
         // 
-        btnStart.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) | System.Windows.Forms.AnchorStyles.Right));
         btnStart.BackColor = System.Drawing.Color.White;
         btnStart.Cursor = System.Windows.Forms.Cursors.Hand;
         btnStart.FlatAppearance.BorderColor = System.Drawing.SystemColors.ButtonShadow;
@@ -68,10 +70,11 @@ partial class Main
         dtp.DropDownAlign = System.Windows.Forms.LeftRightAlignment.Right;
         dtp.Font = new System.Drawing.Font("Cascadia Code SemiLight", 10.2F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)0));
         dtp.Format = System.Windows.Forms.DateTimePickerFormat.Custom;
-        dtp.Location = new System.Drawing.Point(173, 14);
+        dtp.Location = new System.Drawing.Point(213, 13);
         dtp.Name = "dtp";
-        dtp.Size = new System.Drawing.Size(466, 27);
+        dtp.Size = new System.Drawing.Size(426, 27);
         dtp.TabIndex = 1;
+        tipDateTime.SetToolTip(dtp, "UTC+7 (giờ VN)");
         // 
         // txtLog
         // 
@@ -91,17 +94,17 @@ partial class Main
         cmbEvent.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
         cmbEvent.Font = new System.Drawing.Font("Cascadia Code SemiLight", 10.2F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)0));
         cmbEvent.FormattingEnabled = true;
-        cmbEvent.Items.AddRange(new object[] { "1 | entries", "2 | exits" });
+        cmbEvent.Items.AddRange(new object[] { "1 | Xe trong bãi", "2 | Xe đã ra" });
         cmbEvent.Location = new System.Drawing.Point(12, 12);
         cmbEvent.MinimumSize = new System.Drawing.Size(2, 0);
         cmbEvent.Name = "cmbEvent";
-        cmbEvent.Size = new System.Drawing.Size(148, 30);
+        cmbEvent.Size = new System.Drawing.Size(187, 30);
         cmbEvent.TabIndex = 3;
         cmbEvent.SelectedIndex = 0;
         // 
         // btnStop
         // 
-        btnStop.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) | System.Windows.Forms.AnchorStyles.Right));
+        btnStop.Anchor = ((System.Windows.Forms.AnchorStyles)(System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right));
         btnStop.BackColor = System.Drawing.Color.White;
         btnStop.Cursor = System.Windows.Forms.Cursors.Hand;
         btnStop.FlatAppearance.BorderColor = System.Drawing.SystemColors.ButtonShadow;
@@ -116,6 +119,10 @@ partial class Main
         btnStop.Text = "⬛ Stop";
         btnStop.UseVisualStyleBackColor = false;
         btnStop.Click += btnStop_Click;
+        // 
+        // tipDateTime
+        // 
+        tipDateTime.AutomaticDelay = 200;
         // 
         // Main
         // 

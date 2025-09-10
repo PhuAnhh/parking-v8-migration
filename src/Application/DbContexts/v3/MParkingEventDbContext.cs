@@ -29,6 +29,7 @@ public class MParkingEventDbContext : DbContext
                 .HasColumnType("numeric(18, 0)")
                 .HasConversion<long>();
             entity.Property(ce => ce.CustomerName).HasColumnName("CustomerName");
+            entity.Property(ce => ce.CustomerCode).HasColumnName("Customercode");
             entity.Property(ce => ce.IsDelete).HasColumnName("IsDelete");
         });
 
@@ -47,6 +48,7 @@ public class MParkingEventDbContext : DbContext
                 .HasColumnType("numeric(18, 0)")
                 .HasConversion<long>();
             entity.Property(ce => ce.CustomerName).HasColumnName("CustomerName");
+            entity.Property(ce => ce.CustomerCode).HasColumnName("Customercode");
             entity.Property(ce => ce.IsDelete).HasColumnName("IsDelete");
             entity.Property(ce => ce.ReducedMoney).HasColumnName("ReducedMoney");
         });

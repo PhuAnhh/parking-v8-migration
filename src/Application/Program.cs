@@ -1,10 +1,10 @@
-﻿using Application.DbContexts.v3;
+﻿using Application.Entities;
+using Application.DbContexts.v3;
 using Application.DbContexts.v8;
 using Application.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Application.Entities.v8;
 
 namespace Application;
 
@@ -50,7 +50,6 @@ internal static class Program
         // Form
         services.AddSingleton<Main>();
 
-        // Bind Minio config
         var minioSettings = new MinioSettings();
         config.GetSection("Minio").Bind(minioSettings);
         minioSettings.Endpoint = minioSettings.Endpoint.Replace("{IpAddress}", ipAddress);

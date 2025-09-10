@@ -1,6 +1,6 @@
-using System.Globalization;
 using Application.DbContexts.v3;
 using Application.DbContexts.v8;
+using Application.Entities;
 using Application.Entities.v3;
 using Application.Entities.v8;
 using Microsoft.EntityFrameworkCore;
@@ -85,7 +85,7 @@ public class InsertExitsService
             var entry = await _eventDbContext.Entries
                 .Include(en => en.AccessKey)
                 .Where(en => en.AccessKey.Code == ce.CardNumber && !en.Exited)
-                .FirstOrDefaultAsync();
+                .FirstOrDefaultAsync(); 
 
             if (entry == null)
             {
@@ -109,7 +109,7 @@ public class InsertExitsService
                     CreatedBy = "admin",
                     CreatedUtc = TimeZoneInfo.ConvertTimeToUtc(ce.DateTimeOut,
                         TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time")),
-                    CustomerId = entry?.CustomerId
+                    CustomerId = entry.CustomerId
                 };
 
                 _eventDbContext.Exits.Add(exit);
@@ -118,30 +118,30 @@ public class InsertExitsService
                 await _eventDbContext.SaveChangesAsync();
 
                 insertedExits++;
+
+                if (!string.IsNullOrEmpty(ce.PicDirOut))
+                {
+                    await ProcessExitImages(ce, exit.CreatedUtc, log);
+                }
             }
             else
             {
                 skippedExits++;
             }
-
-            if (!string.IsNullOrEmpty(ce.PicDirOut))
-            {
-                await ProcessExitImages(ce, log);
-            }
         }
 
-        log($"---------- Processing Result ----------");
+        log("---------- Processing Result ----------");
         log($"Total number of events: {cardEvents.Count}");
         log($"Events successfully migrated: {insertedExits}");
         log($"Events already existed (skipped): {skippedExits}");
     }
 
-    private async Task ProcessExitImages(CardEvent cardEvent, Action<string> log)
+    private async Task ProcessExitImages(CardEvent cardEvent, DateTime createdUtc, Action<string> log)
     {
         try
         {
-            await ProcessExitImageType(cardEvent, "PLATE_NUMBER", log);
-            await ProcessExitImageType(cardEvent, "VEHICLE", log);
+            await ProcessExitImageType(cardEvent, createdUtc, "PLATE_NUMBER", log);
+            await ProcessExitImageType(cardEvent, createdUtc, "VEHICLE", log);
             await _eventDbContext.SaveChangesAsync();
         }
         catch (Exception ex)
@@ -150,9 +150,9 @@ public class InsertExitsService
         }
     }
 
-    private async Task ProcessExitImageType(CardEvent cardEvent, string imageType, Action<string> log)
+    private async Task ProcessExitImageType(CardEvent cardEvent, DateTime createdUtc, string imageType, Action<string> log)
     {
-        var objectKey = BuildImageObjectKey(cardEvent.PicDirOut);
+        var objectKey = BuildImageObjectKey(createdUtc);
 
         var existedImage = await _eventDbContext.ExitImages
             .AnyAsync(img => img.ExitId == cardEvent.Id && img.Type == imageType);
@@ -251,33 +251,12 @@ public class InsertExitsService
         }
     }
 
-    private string BuildImageObjectKey(string picDirOut)
+    private string BuildImageObjectKey(DateTime createdUtc)
     {
-        var pathParts = picDirOut.Split('\\', StringSplitOptions.RemoveEmptyEntries);
-        var fileName = Path.GetFileName(picDirOut);
-        var dateFolder = pathParts.Length >= 3 ? pathParts[^2] : null;
-        var dateInYyMMdd = ConvertDateToYyMMdd(dateFolder);
-        var hour = ExtractHourFromFileName(fileName);
+        var dateInYyMMdd = createdUtc.ToString("yyMMdd");
+        var hour = createdUtc.ToString("HH");
         var guidPart = Guid.NewGuid().ToString();
 
         return $"{dateInYyMMdd}/{hour}/{guidPart}.jpg";
-    }
-
-    private string ConvertDateToYyMMdd(string dateFolder)
-    {
-        if (string.IsNullOrEmpty(dateFolder))
-            return DateTime.Now.ToString("yyMMdd");
-
-        if (DateTime.TryParseExact(dateFolder, "dd-MM-yyyy", null, DateTimeStyles.None, out DateTime parsedDate))
-        {
-            return parsedDate.ToString("yyMMdd");
-        }
-
-        return DateTime.Now.ToString("yyMMdd");
-    }
-
-    private string ExtractHourFromFileName(string fileName)
-    {
-        return fileName.Length >= 2 ? fileName.Substring(0, 2) : "00";
     }
 }

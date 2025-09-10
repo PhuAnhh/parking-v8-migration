@@ -17,6 +17,7 @@ public class CardEvent
     public string PlateOut { get; set; }
     public decimal Moneys { get; set; }
     public string CustomerName { get; set; }
+    public string CustomerCode { get; set; }
     public bool IsDelete { get; set; }
     public decimal ReducedMoney { get; set; }
 }

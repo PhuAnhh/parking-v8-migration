@@ -1,5 +1,6 @@
 using Application.DbContexts.v3;
 using Application.DbContexts.v8;
+using Application.Entities;
 using Application.Entities.v3;
 using Application.Entities.v8;
 using Microsoft.EntityFrameworkCore;
@@ -25,9 +26,9 @@ public class InsertEntriesService
         MinioSettings minioSettings)
     {
         _mParkingEventDbContext = mParkingEventDbContext;
+        _mParkingDbContext = mParkingDbContext;
         _eventDbContext = eventDbContext;
         _resourceDbContext = resourceDbContext;
-        _mParkingDbContext = mParkingDbContext;
         _minioSettings = minioSettings;
 
         _minioClient = new MinioClient()
@@ -293,16 +294,22 @@ public class InsertEntriesService
 
     private async Task<Device?> MigrateDevice(CardEvent ce, Action<string> log)
     {
-        log($"Lane: {ce.LaneIDIn}");
+        var lane = await _mParkingDbContext.Lanes
+            .FirstOrDefaultAsync(l => l.LaneID == Guid.Parse(ce.LaneIDIn));
+
+        if (lane == null)
+            return null;
+
+        log($"Lane: {lane.LaneName}");
 
         var eventDevice = await _eventDbContext.Devices
-            .FirstOrDefaultAsync(d => d.Id == Guid.Parse(ce.LaneIDIn));
+            .FirstOrDefaultAsync(d => d.Name == lane.LaneName);
 
         if (eventDevice != null)
             return eventDevice;
 
         var resourceDevice = await _resourceDbContext.Devices
-            .FirstOrDefaultAsync(d => d.Id == Guid.Parse(ce.LaneIDIn));
+            .FirstOrDefaultAsync(d => d.Name == lane.LaneName);
 
         if (resourceDevice == null)
             return null;
@@ -325,13 +332,13 @@ public class InsertEntriesService
         log($"Customer: {ce.CustomerName}");
 
         var eventCustomer = await _eventDbContext.Customers
-            .FirstOrDefaultAsync(c => c.Name == ce.CustomerName);
+            .FirstOrDefaultAsync(c => c.Name == ce.CustomerName && c.Code == ce.CustomerCode);
 
         if (eventCustomer != null)
             return eventCustomer;
 
         var resourceCustomer = await _resourceDbContext.Customers
-            .FirstOrDefaultAsync(c => c.Name == ce.CustomerName);
+            .FirstOrDefaultAsync(c => c.Name == ce.CustomerName && c.Code == ce.CustomerCode);
 
         if (resourceCustomer == null)
             return null;
