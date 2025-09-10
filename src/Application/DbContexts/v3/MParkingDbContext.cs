@@ -20,7 +20,6 @@ public class MParkingDbContext : DbContext
             entity.HasKey(c => c.CardId);
             entity.Property(c => c.CardId).HasColumnName("CardId");
             entity.Property(c => c.CardNumber).HasColumnName("CardNumber");
-            entity.Property(c => c.CustomerID).HasColumnName("CustomerID");
             entity.Property(c => c.CardGroupID).HasColumnName("CardGroupID");
             entity.Property(c => c.IsLock).HasColumnName("IsLock");
             entity.Property(c => c.IsDelete).HasColumnName("IsDelete");
