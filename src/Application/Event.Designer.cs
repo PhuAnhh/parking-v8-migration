@@ -1,17 +1,13 @@
-﻿namespace Application;
+﻿using System.ComponentModel;
+
+namespace Application;
 
 partial class Event
 {
     /// <summary>
     ///  Required designer variable.
     /// </summary>
-    private System.ComponentModel.IContainer components = null;
-    private System.Windows.Forms.Button btnStart;
-    private System.Windows.Forms.Button btnStop;
-    private System.Windows.Forms.DateTimePicker dtp;
-    private System.Windows.Forms.TextBox txtLog;
-    private System.Windows.Forms.ComboBox cmbEvent;
-    private System.Windows.Forms.ToolTip tipDateTime;
+    private IContainer components = null;
 
     /// <summary>
     ///  Clean up any resources being used.
@@ -143,5 +139,12 @@ partial class Event
         PerformLayout();
     }
 
+    private System.Windows.Forms.Button btnStart;
+    private System.Windows.Forms.Button btnStop;
+    private System.Windows.Forms.DateTimePicker dtp;
+    private System.Windows.Forms.TextBox txtLog;
+    private System.Windows.Forms.ComboBox cmbEvent;
+    private System.Windows.Forms.ToolTip tipDateTime;
+    
     #endregion
 }

@@ -66,13 +66,6 @@ public partial class Event : Form
 
     private void Log(string message)
     {
-        if (InvokeRequired)
-        {
-            Invoke(new Action(() => Log(message)));
-        }
-        else
-        {
-            txtLog.AppendText($"{DateTime.Now:HH:mm:ss} - {message}{Environment.NewLine}");
-        }
+        txtLog.AppendText($"{DateTime.Now:HH:mm:ss} - {message}\r\n");
     }
 }

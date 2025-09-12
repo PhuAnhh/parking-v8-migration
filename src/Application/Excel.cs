@@ -30,7 +30,9 @@ public partial class Excel : Form
     {
         if (string.IsNullOrEmpty(sourceFile))
         {
-            MessageBox.Show("Please select an Excel file!");
+            MessageBox.Show("Please select an Excel file!", "⚠ Warning",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Warning);
             return;
         }
 
@@ -47,13 +49,16 @@ public partial class Excel : Form
             ProcessExcel(sourceFile, destFile);
 
             Log("Completed! File created: " + destFile);
-            MessageBox.Show("File has been saved successfully:\r\n" + destFile, "✔ Success", MessageBoxButtons.OK,
+            MessageBox.Show("File has been saved successfully:\r\n" + destFile, "✔ Success",
+                MessageBoxButtons.OK,
                 MessageBoxIcon.Information);
         }
         catch (Exception ex)
         {
             Log("Error: " + ex.Message);
-            MessageBox.Show("Error: " + ex.Message, "✖ Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            MessageBox.Show("Error: " + ex.Message, "✖ Error",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Error);
         }
     }
 
@@ -134,8 +139,8 @@ public partial class Excel : Form
 
                 processed++;
                 Log($"Processed {processed}/{total}");
-                
-                prgFileProcessing.Value = processed; 
+
+                prgFileProcessing.Value = processed;
                 prgFileProcessing.Refresh();
                 destRow++;
             }
