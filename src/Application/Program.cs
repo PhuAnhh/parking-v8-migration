@@ -49,6 +49,8 @@ internal static class Program
 
         // Form
         services.AddSingleton<Main>();
+        services.AddSingleton<Event>();
+        services.AddSingleton<Excel>();
 
         var minioSettings = new MinioSettings();
         config.GetSection("Minio").Bind(minioSettings);
