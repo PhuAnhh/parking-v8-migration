@@ -90,7 +90,7 @@ partial class Excel
         // txtLog
         // 
         txtLog.Font = new System.Drawing.Font("Cascadia Code SemiLight", 7.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)0));
-        txtLog.Location = new System.Drawing.Point(12, 125);
+        txtLog.Location = new System.Drawing.Point(12, 112);
         txtLog.Multiline = true;
         txtLog.Name = "txtLog";
         txtLog.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
@@ -101,7 +101,7 @@ partial class Excel
         // 
         prgFileProcessing.BackColor = System.Drawing.Color.White;
         prgFileProcessing.ForeColor = System.Drawing.Color.Green;
-        prgFileProcessing.Location = new System.Drawing.Point(12, 111);
+        prgFileProcessing.Location = new System.Drawing.Point(12, 474);
         prgFileProcessing.Name = "prgFileProcessing";
         prgFileProcessing.Size = new System.Drawing.Size(628, 17);
         prgFileProcessing.Step = 1;

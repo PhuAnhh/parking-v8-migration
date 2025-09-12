@@ -329,7 +329,7 @@ public class InsertEntriesService
 
     private async Task<Customer?> MigrateCustomer(CardEvent ce, Action<string> log)
     {
-        log($"Customer: {ce.CustomerName}");
+        log($"Customer: {(string.IsNullOrEmpty(ce.CustomerName) ? "✖️" : ce.CustomerName)}");
 
         var eventCustomer = await _eventDbContext.Customers
             .FirstOrDefaultAsync(c => c.Name == ce.CustomerName && c.Code == ce.CustomerCode);
