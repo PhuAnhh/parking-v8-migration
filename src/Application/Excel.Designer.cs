@@ -52,6 +52,7 @@ partial class Excel
         // 
         // txtFile
         // 
+        txtFile.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) | System.Windows.Forms.AnchorStyles.Right));
         txtFile.BackColor = System.Drawing.Color.White;
         txtFile.Font = new System.Drawing.Font("Cascadia Code SemiLight", 10.2F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)0));
         txtFile.Location = new System.Drawing.Point(97, 12);
@@ -75,6 +76,7 @@ partial class Excel
         // 
         // btnStart
         // 
+        btnStart.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) | System.Windows.Forms.AnchorStyles.Right));
         btnStart.BackColor = System.Drawing.Color.White;
         btnStart.Cursor = System.Windows.Forms.Cursors.Hand;
         btnStart.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
@@ -89,16 +91,20 @@ partial class Excel
         // 
         // txtLog
         // 
+        txtLog.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) | System.Windows.Forms.AnchorStyles.Left) | System.Windows.Forms.AnchorStyles.Right));
+        txtLog.BackColor = System.Drawing.Color.White;
         txtLog.Font = new System.Drawing.Font("Cascadia Code SemiLight", 7.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)0));
         txtLog.Location = new System.Drawing.Point(12, 112);
         txtLog.Multiline = true;
         txtLog.Name = "txtLog";
+        txtLog.ReadOnly = true;
         txtLog.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
         txtLog.Size = new System.Drawing.Size(628, 366);
         txtLog.TabIndex = 4;
         // 
         // prgFileProcessing
         // 
+        prgFileProcessing.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) | System.Windows.Forms.AnchorStyles.Right));
         prgFileProcessing.BackColor = System.Drawing.Color.White;
         prgFileProcessing.ForeColor = System.Drawing.Color.Green;
         prgFileProcessing.Location = new System.Drawing.Point(12, 474);

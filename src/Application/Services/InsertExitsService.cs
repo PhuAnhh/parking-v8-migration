@@ -14,18 +14,21 @@ public class InsertExitsService
     private readonly MParkingDbContext _mParkingDbContext;
     private readonly MParkingEventDbContext _mParkingEventDbContext;
     private readonly EventDbContext _eventDbContext;
+    private readonly ResourceDbContext _resourceDbContext;
     private readonly MinioSettings _minioSettings;
     private readonly IMinioClient _minioClient;
 
     public InsertExitsService(
+        MParkingDbContext mParkingDbContext,
         MParkingEventDbContext mParkingEventDbContext,
         EventDbContext eventDbContext,
-        MParkingDbContext mParkingDbContext,
+        ResourceDbContext resourceDbContext,
         MinioSettings minioSettings)
     {
         _mParkingDbContext = mParkingDbContext;
         _mParkingEventDbContext = mParkingEventDbContext;
         _eventDbContext = eventDbContext;
+        _resourceDbContext = resourceDbContext;
         _minioSettings = minioSettings;
 
         _minioClient = new MinioClient()
@@ -66,11 +69,16 @@ public class InsertExitsService
             {
                 Id = e.Id,
                 CardNumber = e.CardNumber,
+                PlateIn = e.PlateIn,
                 PlateOut = e.PlateOut,
                 EventCode = e.EventCode,
+                DatetimeIn = e.DatetimeIn,
                 DateTimeOut = e.DateTimeOut,
+                PicDirIn = e.PicDirIn,
                 PicDirOut = e.PicDirOut,
+                LaneIDIn = e.LaneIDIn,
                 LaneIDOut = e.LaneIDOut,
+                UserIDIn = e.UserIDIn,
                 UserIDOut = e.UserIDOut,
                 CustomerName = e.CustomerName,
                 Moneys = e.Moneys,
@@ -82,15 +90,38 @@ public class InsertExitsService
         {
             token.ThrowIfCancellationRequested();
 
-            var entry = await _eventDbContext.Entries
-                .Include(en => en.AccessKey)
-                .Where(en => en.AccessKey.Code == ce.CardNumber && !en.Exited)
-                .FirstOrDefaultAsync(); 
+            var accessKey = await MigrateAccessKey(ce, log);
+            if (accessKey == null)
+            {
+                log($"{ce.CardNumber} doesn't exist");
+                continue;
+            }
 
+            var device = await MigrateDevice(ce, log);
+
+            var customer = await MigrateCustomer(ce, log);
+
+            var entry = await _eventDbContext.Entries
+                .FirstOrDefaultAsync(e => e.CreatedUtc == DateTime.SpecifyKind(ce.DatetimeIn, DateTimeKind.Utc));
             if (entry == null)
             {
-                log($"No entry event found for card {ce.CardNumber}");
-                continue;
+                entry = new Entry
+                {
+                    Id = Guid.NewGuid(),
+                    PlateNumber = ce.PlateIn,
+                    DeviceId = device.Id,
+                    AccessKeyId = accessKey.Id,
+                    Exited = false,
+                    Amount = (long)ce.Moneys,
+                    Deleted = false,
+                    CreatedBy = "admin",
+                    CreatedUtc = TimeZoneInfo.ConvertTimeToUtc(ce.DatetimeIn,
+                        TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time")),
+                    CustomerId = customer?.Id
+                };
+
+                _eventDbContext.Entries.Add(entry);
+                await _eventDbContext.SaveChangesAsync();
             }
 
             var existedExit = await _eventDbContext.Exits.AnyAsync(x => x.Id == ce.Id);
@@ -150,7 +181,8 @@ public class InsertExitsService
         }
     }
 
-    private async Task ProcessExitImageType(CardEvent cardEvent, DateTime createdUtc, string imageType, Action<string> log)
+    private async Task ProcessExitImageType(CardEvent cardEvent, DateTime createdUtc, string imageType,
+        Action<string> log)
     {
         var objectKey = BuildImageObjectKey(createdUtc);
 
@@ -258,5 +290,107 @@ public class InsertExitsService
         var guidPart = Guid.NewGuid().ToString();
 
         return $"{dateInYyMMdd}/{hour}/{guidPart}.jpg";
+    }
+
+    private async Task<AccessKey?> MigrateAccessKey(CardEvent ce, Action<string> log)
+    {
+        log($"AccessKey: {ce.CardNumber}");
+
+        var eventAccessKey = await _eventDbContext.AccessKeys
+            .FirstOrDefaultAsync(a => a.Code.ToLower() == ce.CardNumber.ToLower());
+
+        if (eventAccessKey != null)
+            return eventAccessKey;
+
+        var resourceAccessKey = await _resourceDbContext.AccessKeys
+            .FirstOrDefaultAsync(a => a.Code.ToLower() == ce.CardNumber.ToLower());
+
+        if (resourceAccessKey == null)
+            return null;
+
+        if (resourceAccessKey.Deleted)
+        {
+            log($"AccessKey {resourceAccessKey.Code} has been deleted");
+            return null;
+        }
+
+        eventAccessKey = new AccessKey
+        {
+            Id = resourceAccessKey.Id,
+            Code = resourceAccessKey.Code,
+            Name = resourceAccessKey.Name,
+            Type = resourceAccessKey.Type,
+            CollectionId = resourceAccessKey.CollectionId,
+            Status = resourceAccessKey.Status,
+        };
+
+        _eventDbContext.AccessKeys.Add(eventAccessKey);
+        await _eventDbContext.SaveChangesAsync();
+
+        return eventAccessKey;
+    }
+
+    private async Task<Device?> MigrateDevice(CardEvent ce, Action<string> log)
+    {
+        var lane = await _mParkingDbContext.Lanes
+            .FirstOrDefaultAsync(l => l.LaneID == Guid.Parse(ce.LaneIDIn));
+
+        if (lane == null)
+            return null;
+
+        log($"Lane: {lane.LaneName}");
+
+        var eventDevice = await _eventDbContext.Devices
+            .FirstOrDefaultAsync(d => d.Name == lane.LaneName);
+
+        if (eventDevice != null)
+            return eventDevice;
+
+        var resourceDevice = await _resourceDbContext.Devices
+            .FirstOrDefaultAsync(d => d.Name == lane.LaneName);
+
+        if (resourceDevice == null)
+            return null;
+
+        eventDevice = new Device
+        {
+            Id = resourceDevice.Id,
+            Name = resourceDevice.Name,
+            Type = resourceDevice.Type,
+        };
+
+        _eventDbContext.Devices.Add(eventDevice);
+        await _eventDbContext.SaveChangesAsync();
+
+        return eventDevice;
+    }
+
+    private async Task<Customer?> MigrateCustomer(CardEvent ce, Action<string> log)
+    {
+        log($"Customer: {(string.IsNullOrEmpty(ce.CustomerName) ? "✖️" : ce.CustomerName)}");
+
+        var eventCustomer = await _eventDbContext.Customers
+            .FirstOrDefaultAsync(c => c.Name == ce.CustomerName && c.Code == ce.CustomerCode);
+
+        if (eventCustomer != null)
+            return eventCustomer;
+
+        var resourceCustomer = await _resourceDbContext.Customers
+            .FirstOrDefaultAsync(c => c.Name == ce.CustomerName && c.Code == ce.CustomerCode);
+
+        if (resourceCustomer == null)
+            return null;
+
+        eventCustomer = new Customer
+        {
+            Id = resourceCustomer.Id,
+            Name = resourceCustomer.Name,
+            Code = resourceCustomer.Code
+        };
+
+        _eventDbContext.Customers.Add(eventCustomer);
+        await _eventDbContext.SaveChangesAsync();
+
+        return eventCustomer;
     }
 }

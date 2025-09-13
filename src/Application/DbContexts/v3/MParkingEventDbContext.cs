@@ -39,10 +39,15 @@ public class MParkingEventDbContext : DbContext
             entity.Property(ce => ce.Id).HasColumnName("Id");
             entity.Property(ce => ce.EventCode).HasColumnName("EventCode");
             entity.Property(ce => ce.CardNumber).HasColumnName("CardNumber");
-            entity.Property(ce => ce.DateTimeOut).HasColumnName("DatetimeOut");
+            entity.Property(ce => ce.DatetimeIn).HasColumnName("DatetimeIn");
+            entity.Property(ce => ce.DateTimeOut).HasColumnName("DateTimeOut");
+            entity.Property(ce => ce.PicDirIn).HasColumnName("PicDirIn");
             entity.Property(ce => ce.PicDirOut).HasColumnName("PicDirOut");
+            entity.Property(ce => ce.LaneIDIn).HasColumnName("LaneIDIn");
             entity.Property(ce => ce.LaneIDOut).HasColumnName("LaneIDOut");
+            entity.Property(ce => ce.UserIDIn).HasColumnName("UserIDIn");
             entity.Property(ce => ce.UserIDOut).HasColumnName("UserIDOut");
+            entity.Property(ce => ce.PlateIn).HasColumnName("PlateIn");
             entity.Property(ce => ce.PlateOut).HasColumnName("PlateOut");
             entity.Property(ce => ce.Moneys).HasColumnName("Moneys")
                 .HasColumnType("numeric(18, 0)")

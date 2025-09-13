@@ -76,11 +76,13 @@ partial class Event
         // txtLog
         // 
         txtLog.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) | System.Windows.Forms.AnchorStyles.Left) | System.Windows.Forms.AnchorStyles.Right));
+        txtLog.BackColor = System.Drawing.Color.White;
         txtLog.Cursor = System.Windows.Forms.Cursors.IBeam;
         txtLog.Font = new System.Drawing.Font("Cascadia Code SemiLight", 7.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)0));
         txtLog.Location = new System.Drawing.Point(12, 108);
         txtLog.Multiline = true;
         txtLog.Name = "txtLog";
+        txtLog.ReadOnly = true;
         txtLog.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
         txtLog.Size = new System.Drawing.Size(628, 383);
         txtLog.TabIndex = 2;
@@ -97,7 +99,6 @@ partial class Event
         cmbEvent.Name = "cmbEvent";
         cmbEvent.Size = new System.Drawing.Size(187, 30);
         cmbEvent.TabIndex = 3;
-        cmbEvent.SelectedIndex = 0;
         // 
         // btnStop
         // 
@@ -122,7 +123,7 @@ partial class Event
         // 
         tipDateTime.AutomaticDelay = 200;
         // 
-        // Main
+        // Event
         // 
         BackColor = System.Drawing.SystemColors.Control;
         ClientSize = new System.Drawing.Size(652, 503);
@@ -134,7 +135,7 @@ partial class Event
         Icon = ((System.Drawing.Icon)resources.GetObject("$this.Icon"));
         Location = new System.Drawing.Point(19, 19);
         StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-        Text = "Parking v8 Migration";
+        Text = "Entries/Exits";
         ResumeLayout(false);
         PerformLayout();
     }
