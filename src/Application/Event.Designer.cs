@@ -99,6 +99,7 @@ partial class Event
         cmbEvent.Name = "cmbEvent";
         cmbEvent.Size = new System.Drawing.Size(187, 30);
         cmbEvent.TabIndex = 3;
+        cmbEvent.SelectedIndex = 0;
         // 
         // btnStop
         // 

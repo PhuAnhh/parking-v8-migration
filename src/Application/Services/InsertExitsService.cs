@@ -93,23 +93,32 @@ public class InsertExitsService
             var accessKey = await MigrateAccessKey(ce, log);
             if (accessKey == null)
             {
-                log($"{ce.CardNumber} doesn't exist");
+                log($"⚠ {ce.CardNumber} doesn't exist");
                 continue;
             }
 
-            var device = await MigrateDevice(ce, log);
+            var deviceIn = await MigrateDevice(Guid.Parse(ce.LaneIDIn), log);
+            var deviceOut = await MigrateDevice(Guid.Parse(ce.LaneIDOut), log);
 
             var customer = await MigrateCustomer(ce, log);
 
+            var dateTimeInUtc = TimeZoneInfo.ConvertTimeToUtc(
+                ce.DatetimeIn, TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time"));
+
             var entry = await _eventDbContext.Entries
-                .FirstOrDefaultAsync(e => e.CreatedUtc == DateTime.SpecifyKind(ce.DatetimeIn, DateTimeKind.Utc));
+                .FirstOrDefaultAsync(e =>
+                    e.AccessKeyId == accessKey.Id &&
+                    e.PlateNumber == ce.PlateIn &&
+                    e.CreatedUtc >= dateTimeInUtc.AddMilliseconds(-5) &&
+                    e.CreatedUtc <= dateTimeInUtc.AddMilliseconds(5));
+
             if (entry == null)
             {
                 entry = new Entry
                 {
                     Id = Guid.NewGuid(),
                     PlateNumber = ce.PlateIn,
-                    DeviceId = device.Id,
+                    DeviceId = deviceIn.Id,
                     AccessKeyId = accessKey.Id,
                     Exited = false,
                     Amount = (long)ce.Moneys,
@@ -133,7 +142,7 @@ public class InsertExitsService
                     EntryId = entry.Id,
                     AccessKeyId = entry.AccessKeyId,
                     PlateNumber = ce.PlateOut,
-                    DeviceId = Guid.Parse(ce.LaneIDOut),
+                    DeviceId = deviceOut.Id,
                     Amount = (long)ce.Moneys,
                     DiscountAmount = (long)ce.ReducedMoney,
                     Deleted = false,
@@ -181,8 +190,12 @@ public class InsertExitsService
         }
     }
 
-    private async Task ProcessExitImageType(CardEvent cardEvent, DateTime createdUtc, string imageType,
-        Action<string> log)
+    private async Task ProcessExitImageType(
+        CardEvent cardEvent,
+        DateTime createdUtc,
+        string imageType,
+        Action<string> log
+    )
     {
         var objectKey = BuildImageObjectKey(createdUtc);
 
@@ -330,10 +343,10 @@ public class InsertExitsService
         return eventAccessKey;
     }
 
-    private async Task<Device?> MigrateDevice(CardEvent ce, Action<string> log)
+    private async Task<Device?> MigrateDevice(Guid laneId, Action<string> log)
     {
         var lane = await _mParkingDbContext.Lanes
-            .FirstOrDefaultAsync(l => l.LaneID == Guid.Parse(ce.LaneIDIn));
+            .FirstOrDefaultAsync(l => l.LaneID == laneId);
 
         if (lane == null)
             return null;

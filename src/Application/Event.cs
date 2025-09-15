@@ -18,6 +18,9 @@ public partial class Event : Form
     {
         btnStart.Enabled = false;
         btnStop.Enabled = true;
+        
+        txtLog.Clear();
+        
         Log("Let's get started ...");
 
         _cancellationTokenSource = new CancellationTokenSource();

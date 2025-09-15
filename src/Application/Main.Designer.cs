@@ -41,7 +41,7 @@ partial class Main
         // pbLogo
         // 
         pbLogo.Image = ((System.Drawing.Image)resources.GetObject("pbLogo.Image"));
-        pbLogo.Location = new System.Drawing.Point(182, 36);
+        pbLogo.Location = new System.Drawing.Point(190, 34);
         pbLogo.Name = "pbLogo";
         pbLogo.Size = new System.Drawing.Size(200, 56);
         pbLogo.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
@@ -66,9 +66,9 @@ partial class Main
         btnExcel.Cursor = System.Windows.Forms.Cursors.Hand;
         btnExcel.Font = new System.Drawing.Font("Cascadia Code SemiLight", 10.2F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)0));
         btnExcel.ForeColor = System.Drawing.Color.MidnightBlue;
-        btnExcel.Location = new System.Drawing.Point(313, 124);
+        btnExcel.Location = new System.Drawing.Point(312, 124);
         btnExcel.Name = "btnExcel";
-        btnExcel.Size = new System.Drawing.Size(170, 61);
+        btnExcel.Size = new System.Drawing.Size(179, 61);
         btnExcel.TabIndex = 2;
         btnExcel.Text = "Excel";
         btnExcel.UseVisualStyleBackColor = true;
@@ -79,7 +79,7 @@ partial class Main
         AutoScaleMode = System.Windows.Forms.AutoScaleMode.Inherit;
         BackColor = System.Drawing.Color.White;
         BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch;
-        ClientSize = new System.Drawing.Size(573, 226);
+        ClientSize = new System.Drawing.Size(573, 221);
         Controls.Add(btnExcel);
         Controls.Add(btnEvent);
         Controls.Add(pbLogo);

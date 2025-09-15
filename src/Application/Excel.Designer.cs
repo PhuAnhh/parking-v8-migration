@@ -42,23 +42,23 @@ partial class Excel
         // 
         // lblFile
         // 
-        lblFile.Font = new System.Drawing.Font("Cascadia Code SemiLight", 10.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)0));
+        lblFile.Font = new System.Drawing.Font("Cascadia Code SemiLight", 10.2F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)0));
         lblFile.ForeColor = System.Drawing.Color.Green;
-        lblFile.Location = new System.Drawing.Point(12, 13);
+        lblFile.Location = new System.Drawing.Point(12, 15);
         lblFile.Name = "lblFile";
-        lblFile.Size = new System.Drawing.Size(79, 31);
+        lblFile.Size = new System.Drawing.Size(121, 31);
         lblFile.TabIndex = 0;
-        lblFile.Text = "Excel:";
+        lblFile.Text = "File Excel:";
         // 
         // txtFile
         // 
         txtFile.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) | System.Windows.Forms.AnchorStyles.Right));
         txtFile.BackColor = System.Drawing.Color.White;
         txtFile.Font = new System.Drawing.Font("Cascadia Code SemiLight", 10.2F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)0));
-        txtFile.Location = new System.Drawing.Point(97, 12);
+        txtFile.Location = new System.Drawing.Point(134, 12);
         txtFile.Name = "txtFile";
         txtFile.ReadOnly = true;
-        txtFile.Size = new System.Drawing.Size(543, 27);
+        txtFile.Size = new System.Drawing.Size(506, 27);
         txtFile.TabIndex = 1;
         // 
         // btnFile

@@ -86,7 +86,10 @@ public class InsertEntriesService
 
             var accessKey = await MigrateAccessKey(ce, log);
             if (accessKey == null)
+            {
+                log($"⚠ {ce.CardNumber} doesn't exist");
                 continue;
+            }
 
             var device = await MigrateDevice(ce, log);
 
@@ -109,7 +112,7 @@ public class InsertEntriesService
                         TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time")),
                     CustomerId = customer?.Id,
                 };
-                
+
                 _eventDbContext.Entries.Add(entry);
                 await _eventDbContext.SaveChangesAsync();
 
