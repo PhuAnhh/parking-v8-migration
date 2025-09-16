@@ -131,6 +131,11 @@ public class InsertExitsService
 
                 _eventDbContext.Entries.Add(entry);
                 await _eventDbContext.SaveChangesAsync();
+
+                if (!string.IsNullOrEmpty(ce.PicDirIn))
+                {
+                    await ProcessEventImages(entry.Id, ce.PicDirIn, entry.CreatedUtc, "ENTRY", log);
+                }
             }
 
             var existedExit = await _eventDbContext.Exits.AnyAsync(x => x.Id == ce.Id);
@@ -161,7 +166,7 @@ public class InsertExitsService
 
                 if (!string.IsNullOrEmpty(ce.PicDirOut))
                 {
-                    await ProcessExitImages(ce, exit.CreatedUtc, log);
+                    await ProcessEventImages(exit.Id, ce.PicDirOut, exit.CreatedUtc, "EXIT", log);
                 }
             }
             else
@@ -176,46 +181,81 @@ public class InsertExitsService
         log($"Events already existed (skipped): {skippedExits}");
     }
 
-    private async Task ProcessExitImages(CardEvent cardEvent, DateTime createdUtc, Action<string> log)
+    private async Task ProcessEventImages(
+        Guid eventId,
+        string? localFilePath,
+        DateTime createdUtc,
+        string eventType,
+        Action<string> log)
     {
         try
         {
-            await ProcessExitImageType(cardEvent, createdUtc, "PLATE_NUMBER", log);
-            await ProcessExitImageType(cardEvent, createdUtc, "VEHICLE", log);
+            await ProcessEventImageType(eventId, localFilePath, createdUtc, "PLATE_NUMBER", eventType, log);
+            await ProcessEventImageType(eventId, localFilePath, createdUtc, "VEHICLE", eventType, log);
             await _eventDbContext.SaveChangesAsync();
         }
         catch (Exception ex)
         {
-            log($"Failed to process exit image for exit {cardEvent.Id}: {ex.Message}");
+            log($"Failed to process {eventType} image for {eventId}: {ex.Message}");
         }
     }
 
-    private async Task ProcessExitImageType(
-        CardEvent cardEvent,
+    private async Task ProcessEventImageType(
+        Guid eventId,
+        string? localFilePath,
         DateTime createdUtc,
         string imageType,
-        Action<string> log
-    )
+        string eventType,
+        Action<string> log)
     {
+        if (string.IsNullOrEmpty(localFilePath))
+        {
+            log($"No local file path for {eventType} image {imageType}");
+            return;
+        }
+
         var objectKey = BuildImageObjectKey(createdUtc);
 
-        var existedImage = await _eventDbContext.ExitImages
-            .AnyAsync(img => img.ExitId == cardEvent.Id && img.Type == imageType);
-
-        if (existedImage)
-            return;
-
-        var uploadSuccess = await UploadImageToMinIO(cardEvent.PicDirOut, objectKey, log);
-
-        if (uploadSuccess)
+        bool existedImage;
+        if (eventType == "ENTRY")
         {
-            await AddExitImage(cardEvent.Id, objectKey, imageType);
-            log($"{imageType} exit image uploaded: {objectKey}");
+            existedImage = await _eventDbContext.EntryImages
+                .AnyAsync(img => img.EntryId == eventId && img.Type == imageType);
         }
         else
         {
-            log($"Failed to upload {imageType} exit image: {cardEvent.PicDirOut}");
+            existedImage = await _eventDbContext.ExitImages
+                .AnyAsync(img => img.ExitId == eventId && img.Type == imageType);
         }
+
+        if (existedImage) return;
+
+        var uploadSuccess = await UploadImageToMinIO(localFilePath, objectKey, log);
+
+        if (uploadSuccess)
+        {
+            if (eventType == "ENTRY")
+                await AddEntryImage(eventId, objectKey, imageType);
+            else
+                await AddExitImage(eventId, objectKey, imageType);
+
+            log($"{imageType} {eventType} image uploaded: {objectKey}");
+        }
+        else
+        {
+            log($"Failed to upload {imageType} {eventType} image: {localFilePath}");
+        }
+    }
+
+    private async Task AddEntryImage(Guid entryId, string objectKey, string imageType)
+    {
+        var entryImage = new EntryImage
+        {
+            EntryId = entryId,
+            ObjectKey = objectKey,
+            Type = imageType
+        };
+        _eventDbContext.EntryImages.Add(entryImage);
     }
 
     private async Task AddExitImage(Guid exitId, string objectKey, string imageType)

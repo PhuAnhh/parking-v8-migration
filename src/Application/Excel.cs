@@ -121,7 +121,7 @@ public partial class Excel : Form
                 wsNew.Cells[destRow, 2].Value = wsSrc.Cells[row, 3].Value; // Mã thẻ
                 wsNew.Cells[destRow, 3].Value = wsSrc.Cells[row, 2].Value; // CardNo
                 wsNew.Cells[destRow, 4].Value = "Thẻ";
-                wsNew.Cells[destRow, 5].Value = "Sử dụng";
+                wsNew.Cells[destRow, 5].Value = wsSrc.Cells[row, 15].Value; //Trạng thái
                 wsNew.Cells[destRow, 6].Value = wsSrc.Cells[row, 4].Value; // Nhóm thẻ
                 wsNew.Cells[destRow, 7].Value = "";
                 wsNew.Cells[destRow, 8].Value = wsSrc.Cells[row, 7].Value; // Tên xe
