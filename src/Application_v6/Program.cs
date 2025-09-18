@@ -15,6 +15,7 @@ static class Program
     [STAThread]
     static void Main()
     {
+        AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
         // To customize application configuration such as set high DPI settings or default font,
         // see https://aka.ms/applicationconfiguration.
         ApplicationConfiguration.Initialize();
@@ -30,10 +31,10 @@ static class Program
             opt.UseSqlServer(config.GetConnectionString("Parking")));
 
         services.AddDbContext<EventDbContext>(opt =>
-            opt.UseSqlServer(config.GetConnectionString("Event")));
+            opt.UseNpgsql(config.GetConnectionString("Event")));
         
         services.AddDbContext<ResourceDbContext>(opt =>
-            opt.UseSqlServer(config.GetConnectionString("Resource")));
+            opt.UseNpgsql(config.GetConnectionString("Resource")));
         
         // Service
         services.AddTransient<AccessKeyCollectionService>();
@@ -41,6 +42,7 @@ static class Program
         services.AddTransient<CustomerCollectionService>();
         services.AddTransient<CustomerService>();
         services.AddTransient<DeviceService>();
+        services.AddTransient<EntryService>();
         
         // Form
         services.AddSingleton<Main>();

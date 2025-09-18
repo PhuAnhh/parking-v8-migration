@@ -14,8 +14,8 @@ public class CustomerGroupConfiguration : IEntityTypeConfiguration<CustomerGroup
         builder.Property(x => x.ParentId).HasColumnName("ParentId");
         builder.Property(x => x.Name).HasColumnName("Name");
         builder.Property(x => x.Code).HasColumnName("Code");
-        builder.Property(x => x.Deleted).HasColumnName("Deleted").HasConversion<bool>();
-        builder.Property(x => x.CreatedUtc).HasColumnName("CreatedUtc").HasConversion<DateTime>();
-        builder.Property(x => x.UpdatedUtc).HasColumnName("UpdatedUtc").HasConversion<DateTime>();
+        builder.Property(x => x.Deleted).HasColumnName("Deleted");
+        builder.Property(x => x.CreatedUtc).HasColumnName("CreatedUtc");
+        builder.Property(x => x.UpdatedUtc).HasColumnName("UpdatedUtc");
     }
 }

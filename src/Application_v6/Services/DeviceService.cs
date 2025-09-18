@@ -2,17 +2,20 @@ using Microsoft.EntityFrameworkCore;
 using Application_v6.DbContexts.v6;
 using Application_v6.DbContexts.v8;
 using Application_v6.Entities.v8;
+
 namespace Application_v6.Services;
 
 public class DeviceService
 {
     private readonly ParkingDbContext _parkingDbContext;
     private readonly EventDbContext _eventDbContext;
+    private readonly ResourceDbContext _resourceDbContext;
 
-    public DeviceService(ParkingDbContext parkingDbContext, EventDbContext eventDbContext)
+    public DeviceService(ParkingDbContext parkingDbContext, EventDbContext eventDbContext, ResourceDbContext resourceDbContext)
     {
         _parkingDbContext = parkingDbContext;
         _eventDbContext = eventDbContext;
+        _resourceDbContext = resourceDbContext;
     }
     
     public async Task InsertDevice(DateTime fromDate, Action<string> log, CancellationToken token)
@@ -28,10 +31,11 @@ public class DeviceService
         {
             token.ThrowIfCancellationRequested();
             
-            var exitedDevice = await _eventDbContext.Devices.AnyAsync(d => d.Id == l.Id);
-            if (!exitedDevice)
+            var exitedResource = await _resourceDbContext.Devices.AnyAsync(d => d.Id == l.Id);
+            var exitedEvent = await _eventDbContext.Devices.AnyAsync(d => d.Id == l.Id);
+            if (!exitedResource && !exitedEvent)
             {
-                var device = new Device
+                var dResource = new Device
                 {
                     Id = l.Id,
                     Name = l.Name,
@@ -43,14 +47,30 @@ public class DeviceService
                     UpdatedUtc = l.UpdatedUtc,
                 };
                 
-                _eventDbContext.Devices.Add(device);
-                await _eventDbContext.SaveChangesAsync();
+                var dEvent = new Device
+                {
+                    Id = l.Id,
+                    Name = l.Name,
+                    Code = l.Code,
+                    Type = "LANE",
+                    Enabled = l.Enabled,
+                    Deleted = l.Deleted,
+                    CreatedUtc = l.CreatedUtc,
+                    UpdatedUtc = l.UpdatedUtc,
+                };
+                _resourceDbContext.Devices.Add(dResource);
+                _eventDbContext.Devices.Add(dEvent);
+                
+                await _resourceDbContext.SaveChangesAsync(token);
+                await _eventDbContext.SaveChangesAsync(token);
 
                 inserted++;
+                log($"[INSERT] {l.Id} - {l.Name} đã thêm vào Event & Resource" );
             }
             else
             {
                 skipped++;
+                log($"[SKIP] {l.Id} - {l.Name} đã tồn tại" );
             }
         }
 

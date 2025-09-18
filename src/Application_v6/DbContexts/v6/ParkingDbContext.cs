@@ -11,6 +11,7 @@ public class ParkingDbContext : DbContext
     public DbSet<Customer> Customers { get; set; }
     public DbSet<CustomerGroup> CustomerGroups { get; set; }
     public DbSet<Vehicle> Vehicles { get; set; }
+    public DbSet<VehicleIdentity> VehicleIdentities { get; set; }
     public DbSet<Lane> Lanes { get; set; }
     public DbSet<EventIn> EventIns  { get; set; }
     public DbSet<EventOut> EventOuts { get; set; }
@@ -24,6 +25,7 @@ public class ParkingDbContext : DbContext
         modelBuilder.ApplyConfiguration(new CustomerConfiguration());
         modelBuilder.ApplyConfiguration(new CustomerGroupConfiguration());
         modelBuilder.ApplyConfiguration(new VehicleConfiguration());
+        modelBuilder.ApplyConfiguration(new VehicleIdentityConfiguration());
         modelBuilder.ApplyConfiguration(new LaneConfiguration());
         modelBuilder.ApplyConfiguration(new EventInConfiguration());
         modelBuilder.ApplyConfiguration(new EventOutConfiguration());

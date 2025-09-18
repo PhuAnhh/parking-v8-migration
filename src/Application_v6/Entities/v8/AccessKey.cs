@@ -7,6 +7,8 @@ public class AccessKey
     public string Code { get; set; }
     public string Type { get; set; }
     public Guid CollectionId { get; set; }
+    public Guid? CustomerId { get; set; }
+    public DateTime ExpiredUtc { get; set; }
     public string Status { get; set; }
     public bool Deleted { get; set; }
     public DateTime CreatedUtc { get; set; }

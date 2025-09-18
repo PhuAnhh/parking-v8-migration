@@ -9,11 +9,13 @@ public class AccessKeyCollectionService
 {
     private readonly ParkingDbContext _parkingDbContext;
     private readonly EventDbContext _eventDbContext;
+    private readonly ResourceDbContext _resourceDbContext;
 
-    public AccessKeyCollectionService(ParkingDbContext parkingDbContext, EventDbContext eventDbContext)
+    public AccessKeyCollectionService(ParkingDbContext parkingDbContext, EventDbContext eventDbContext, ResourceDbContext resourceDbContext)
     {
         _parkingDbContext = parkingDbContext;
         _eventDbContext = eventDbContext;
+        _resourceDbContext = resourceDbContext;
     }
 
     public async Task InsertAccessKeyCollection(DateTime fromDate, Action<string> log, CancellationToken token)
@@ -29,28 +31,46 @@ public class AccessKeyCollectionService
         {
             token.ThrowIfCancellationRequested();
             
-            var exitedAccessKeyCollection = await _eventDbContext.AccessKeyCollections.AnyAsync(ac => ac.Id == ig.Id);
-            if (!exitedAccessKeyCollection)
+            var exitedResource = await _eventDbContext.AccessKeyCollections.AnyAsync(ac => ac.Id == ig.Id);
+            var exitedEvent = await _resourceDbContext.AccessKeyCollections.AnyAsync(ac => ac.Id == ig.Id);
+                
+            if (!exitedResource && !exitedEvent)
             {
-                var accessKeyCollection = new AccessKeyCollection
+                var aKCResource = new AccessKeyCollection
                 {
                     Id = ig.Id,
                     Name = ig.Name,
                     Code = ig.Code,
-                    VehicleType = ig.VehicleType,
+                    VehicleType = ig.VehicleType.ToUpper(),
                     Deleted = ig.Deleted,
                     CreatedUtc = ig.CreatedUtc,
                     UpdatedUtc = ig.UpdatedUtc,
                 };
                 
-                _eventDbContext.AccessKeyCollections.Add(accessKeyCollection);
+                var aKCEvent = new AccessKeyCollection
+                {
+                    Id = ig.Id,
+                    Name = ig.Name,
+                    Code = ig.Code,
+                    VehicleType = ig.VehicleType.ToUpper(),
+                    Deleted = ig.Deleted,
+                    CreatedUtc = ig.CreatedUtc,
+                    UpdatedUtc = ig.UpdatedUtc,
+                };
+                
+                _resourceDbContext.AccessKeyCollections.Add(aKCResource);
+                _eventDbContext.AccessKeyCollections.Add(aKCEvent);
+                
                 await _eventDbContext.SaveChangesAsync();
+                await _resourceDbContext.SaveChangesAsync();
 
                 inserted++;
+                log($"[INSERT] {ig.Id} - {ig.Name} đã thêm vào Event & Resource");
             }
             else
             {
                 skipped++;
+                log($"[SKIP] {ig.Id} - {ig.Name} đã tồn tại");
             }
         }
 

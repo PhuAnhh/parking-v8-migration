@@ -15,6 +15,8 @@ public class AccessKeyConfiguration : IEntityTypeConfiguration<AccessKey>
         builder.Property(x => x.Code).HasColumnName("code");
         builder.Property(x => x.Type).HasColumnName("type").HasConversion<string>();
         builder.Property(x => x.CollectionId).HasColumnName("collection_id");
+        builder.Property(x => x.CustomerId).HasColumnName("customer_id");
+        builder.Property(x => x.ExpiredUtc).HasColumnName("expired_utc");
         builder.Property(x => x.Status).HasColumnName("status").HasConversion<string>();
         builder.Property(x => x.Deleted).HasColumnName("deleted");
         builder.Property(x => x.CreatedUtc).HasColumnName("created_utc");

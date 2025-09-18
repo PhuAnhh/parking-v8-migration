@@ -13,9 +13,9 @@ public class LaneConfiguration : IEntityTypeConfiguration<Lane>
         builder.Property(x => x.Id).HasColumnName("Id");
         builder.Property(x => x.Code).HasColumnName("Code");
         builder.Property(x => x.Name).HasColumnName("Name");
-        builder.Property(x => x.Enabled).HasColumnName("Enabled").HasConversion<bool>();
-        builder.Property(x => x.Deleted).HasColumnName("Deleted").HasConversion<bool>();
-        builder.Property(x => x.CreatedUtc).HasColumnName("CreatedUtc").HasConversion<DateTime>();
-        builder.Property(x => x.UpdatedUtc).HasColumnName("UpdatedUtc").HasConversion<DateTime>();
+        builder.Property(x => x.Enabled).HasColumnName("Enabled");
+        builder.Property(x => x.Deleted).HasColumnName("Deleted");
+        builder.Property(x => x.CreatedUtc).HasColumnName("CreatedUtc");
+        builder.Property(x => x.UpdatedUtc).HasColumnName("UpdatedUtc");
     }
 }

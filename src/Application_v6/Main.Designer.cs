@@ -80,13 +80,12 @@ partial class Main
         // 
         // txtLog
         // 
-        txtLog.BackColor = System.Drawing.Color.White;
-        txtLog.Location = new System.Drawing.Point(35, 157);
+        txtLog.Location = new System.Drawing.Point(64, 177);
         txtLog.Multiline = true;
         txtLog.Name = "txtLog";
         txtLog.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-        txtLog.Size = new System.Drawing.Size(711, 386);
-        txtLog.TabIndex = 4;
+        txtLog.Size = new System.Drawing.Size(682, 353);
+        txtLog.TabIndex = 5;
         // 
         // Main
         // 

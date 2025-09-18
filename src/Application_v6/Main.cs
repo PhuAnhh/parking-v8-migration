@@ -16,7 +16,7 @@ public partial class Main : Form
 
     private async void btnStart_Click(object sender, EventArgs e)
     {
-        txtLog.Enabled = false;
+        btnStart.Enabled = false;
         btnStop.Enabled = true;
 
         txtLog.Clear();
@@ -58,11 +58,11 @@ public partial class Main : Form
                 await insertService.InsertDevice(fromDate, Log, token);
             }
 
-            // else if (selected == 5)
-            // {
-            //     var insertService = scope.ServiceProvider.GetRequiredService<EntryService>();
-            //     await insertService.InsertCustomer(fromDate, Log, token);
-            // }
+            else if (selected == 5)
+            {
+                var insertService = scope.ServiceProvider.GetRequiredService<EntryService>();
+                await insertService.InsertEntry(fromDate, Log, token);
+            }
             // else if (selected == 6)
             // {
             //     var insertService = scope.ServiceProvider.GetRequiredService<CustomerService>();

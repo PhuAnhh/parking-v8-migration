@@ -17,10 +17,10 @@ public class EventInConfiguration : IEntityTypeConfiguration<EventIn>
         builder.Property(x => x.PlateNumber).HasColumnName("PlateNumber");
         builder.Property(x => x.TotalPaid).HasColumnName("TotalPaid");
         builder.Property(x => x.Note).HasColumnName("Note");
-        builder.Property(x => x.Status).HasColumnName("Status").HasConversion<string>();
+        builder.Property(x => x.Status).HasColumnName("Status");
         builder.Property(x => x.Deleted).HasColumnName("Deleted");
-        builder.Property(x => x.CreatedUtc).HasColumnName("CreatedUtc").HasConversion<DateTime>();
-        builder.Property(x => x.UpdatedUtc).HasColumnName("UpdatedUtc").HasConversion<DateTime>();
+        builder.Property(x => x.CreatedUtc).HasColumnName("CreatedUtc");
+        builder.Property(x => x.UpdatedUtc).HasColumnName("UpdatedUtc");
         builder.Property(x => x.CreatedBy).HasColumnName("CreatedBy");
     }
 }

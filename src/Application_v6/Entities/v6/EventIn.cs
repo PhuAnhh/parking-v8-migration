@@ -8,7 +8,7 @@ public class EventIn
     public Guid LaneId { get; set; }
     public string PlateNumber { get; set; }
     public long TotalPaid { get; set; }
-    public string Note { get; set; }
+    public string? Note { get; set; }
     public string Status { get; set; }
     public bool Deleted { get; set; }
     public DateTime CreatedUtc { get; set; }

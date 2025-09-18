@@ -15,9 +15,9 @@ public class CustomerConfiguration : IEntityTypeConfiguration<Customer>
         builder.Property(x => x.Code).HasColumnName("Code");
         builder.Property(x => x.Address).HasColumnName("Address");
         builder.Property(x => x.PhoneNumber).HasColumnName("PhoneNumber");
-        builder.Property(x => x.CustomerGroupId).HasColumnName("CustomerGroupId").HasConversion<Guid?>();
-        builder.Property(x => x.Deleted).HasColumnName("Deleted").HasConversion<bool>();
-        builder.Property(x => x.CreatedUtc).HasColumnName("CreatedUtc").HasConversion<DateTime>();
-        builder.Property(x => x.UpdatedUtc).HasColumnName("UpdatedUtc").HasConversion<DateTime>();
+        builder.Property(x => x.CustomerGroupId).HasColumnName("CustomerGroupId");
+        builder.Property(x => x.Deleted).HasColumnName("Deleted");
+        builder.Property(x => x.CreatedUtc).HasColumnName("CreatedUtc");
+        builder.Property(x => x.UpdatedUtc).HasColumnName("UpdatedUtc");
     }
 }
