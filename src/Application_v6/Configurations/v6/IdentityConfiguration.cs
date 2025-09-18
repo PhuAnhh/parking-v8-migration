@@ -16,6 +16,7 @@ public class IdentityConfiguration : IEntityTypeConfiguration<Identity>
         builder.Property(x => x.IdentityGroupId).HasColumnName("IdentityGroupId");
         builder.Property(x => x.Type).HasColumnName("Type").HasConversion<string>();
         builder.Property(x => x.Status).HasColumnName("Status").HasConversion<string>();
+        builder.Property(x => x.Deleted).HasColumnName("Deleted").HasConversion<bool>();
         builder.Property(x => x.CreatedUtc).HasColumnName("CreatedUtc").HasConversion<DateTime>();
         builder.Property(x => x.UpdatedUtc).HasColumnName("UpdatedUtc").HasConversion<DateTime>();
     }

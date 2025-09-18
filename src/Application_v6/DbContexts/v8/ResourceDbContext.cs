@@ -4,18 +4,16 @@ using Application_v6.Entities.v8;
 
 namespace Application_v6.DbContexts.v8;
 
-public class EventDbContext : DbContext
+public class ResourceDbContext : DbContext
 {
     public DbSet<AccessKey> AccessKeys { get; set; }
     public DbSet<AccessKeyCollection> AccessKeyCollections { get; set; }
     public DbSet<Customer> Customers { get; set; }
     public DbSet<CustomerCollection> CustomerCollections { get; set; }
     public DbSet<Device> Devices { get; set; }
-    public DbSet<Entry> Entries { get; set; }
-    public DbSet<Exit> Exits { get; set; }
     
-    public EventDbContext(DbContextOptions<EventDbContext> options) : base(options) {}
-    
+    public ResourceDbContext(DbContextOptions<ResourceDbContext> options) : base(options) {}
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfiguration(new AccessKeyConfiguration());
@@ -23,7 +21,5 @@ public class EventDbContext : DbContext
         modelBuilder.ApplyConfiguration(new CustomerConfiguration());
         modelBuilder.ApplyConfiguration(new CustomerCollectionConfiguration());
         modelBuilder.ApplyConfiguration(new DeviceConfiguration());
-        modelBuilder.ApplyConfiguration(new EntryConfiguration());
-        modelBuilder.ApplyConfiguration(new ExitConfiguration());
     }
 }

@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using parking_v6_to_v8_migration.Configurations.v6;
+using Application_v6.Configurations.v6;
 using Application_v6.Entities.v6;
 
 namespace Application_v6.DbContexts.v6;
@@ -15,6 +15,8 @@ public class ParkingDbContext : DbContext
     public DbSet<EventIn> EventIns  { get; set; }
     public DbSet<EventOut> EventOuts { get; set; }
 
+    public ParkingDbContext(DbContextOptions<ParkingDbContext> options) : base(options) {}
+    
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfiguration(new IdentityConfiguration());
