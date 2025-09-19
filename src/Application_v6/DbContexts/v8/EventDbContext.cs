@@ -16,6 +16,7 @@ public class EventDbContext : DbContext
     public DbSet<Entry> Entries { get; set; }
     public DbSet<EntryImage> EntryImages { get; set; }
     public DbSet<Exit> Exits { get; set; }
+    public DbSet<ExitImage> ExitImages { get; set; }
     
     public EventDbContext(DbContextOptions<EventDbContext> options) : base(options) {}
     
@@ -30,5 +31,6 @@ public class EventDbContext : DbContext
         modelBuilder.ApplyConfiguration(new EntryConfiguration());
         modelBuilder.ApplyConfiguration(new EntryImageConfiguration());
         modelBuilder.ApplyConfiguration(new ExitConfiguration());
+        modelBuilder.ApplyConfiguration(new ExitImageConfiguration());
     }
 }

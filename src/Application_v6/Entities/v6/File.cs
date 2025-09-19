@@ -9,4 +9,5 @@ public class File
     public DateTime CreatedUtc { get; set; }
     
     public ICollection<EventInFile> EventInImages { get; set; }
+    public ICollection<EventOutFile> EventOutImages { get; set; }
 }

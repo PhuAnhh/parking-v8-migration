@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Application_v6.DbContexts.v6;
 using Application_v6.DbContexts.v8;
+using Application_v6.Entities.v6;
 using Application_v6.Entities.v8;
 
 namespace Application_v6.Services;
@@ -23,6 +24,8 @@ public class ExitService
 
         var exits = await _parkingDbContext.EventOuts
             .Where(e => !e.Deleted && e.CreatedUtc >= fromDate)
+            .Include(e => e.EventOutFiles)
+                .ThenInclude(eif => eif.File)
             .ToListAsync();
 
         foreach (var eo in exits)
@@ -32,7 +35,11 @@ public class ExitService
             var existsExit = await _eventDbContext.Exits.AnyAsync(e => e.Id == eo.Id);
             var existsCustomer = await _eventDbContext.Customers.AnyAsync(c => c.Id == eo.CustomerId, token);
 
-            var eventIn = await _parkingDbContext.EventIns.FirstOrDefaultAsync(ei => ei.Id == eo.EventInId, token);
+            var eventIn = await _parkingDbContext.EventIns
+                .Include(ei => ei.EventInFiles)
+                    .ThenInclude(eif => eif.File)
+                .FirstOrDefaultAsync(ei => ei.Id == eo.EventInId, token);
+            
             if (eventIn == null)
                 continue;
 
@@ -60,6 +67,8 @@ public class ExitService
                 };
 
                 _eventDbContext.Entries.Add(entry);
+                await InsertEntryImagesAsync(eventIn, token);
+                
                 log($"[INSERT-ENTRY] Entry {entry.Id} được tạo kèm Exit");
             }
 
@@ -82,6 +91,7 @@ public class ExitService
                 };
 
                 _eventDbContext.Exits.Add(exit);
+                await InsertExitImagesAsync(eo, token);
 
                 await _eventDbContext.SaveChangesAsync(token);
 
@@ -99,5 +109,73 @@ public class ExitService
         log($"Tổng: {exits.Count}");
         log($"Thành công: {inserted}");
         log($"Tồn tại: {skipped}");
+    }
+    
+    private async Task InsertEntryImagesAsync(EventIn ei, CancellationToken token)
+    {
+        if (ei.EventInFiles == null || !ei.EventInFiles.Any()) return;
+
+        foreach (var eif in ei.EventInFiles)
+        {
+            if (eif.File == null) continue;
+
+            var newType = ConvertImageType(eif.ImageType);
+
+            bool existsImage = await _eventDbContext.EntryImages.AnyAsync(img =>
+                img.EntryId == ei.Id &&
+                img.ObjectKey == eif.File.ObjectKey &&
+                img.Type == newType, token);
+
+            if (!existsImage)
+            {
+                var entryImage = new EntryImage
+                {
+                    EntryId = ei.Id,
+                    ObjectKey = eif.File.ObjectKey,
+                    Type = newType,
+                };
+
+                _eventDbContext.EntryImages.Add(entryImage);
+            }
+        }
+    }
+    
+    private async Task InsertExitImagesAsync(EventOut eo, CancellationToken token)
+    {
+        if (eo.EventOutFiles == null || !eo.EventOutFiles.Any()) return;
+
+        foreach (var eif in eo.EventOutFiles)
+        {
+            if (eif.File == null) continue;
+
+            var newType = ConvertImageType(eif.ImageType);
+
+            bool existsImage = await _eventDbContext.ExitImages.AnyAsync(img =>
+                img.ExitId == eo.Id &&
+                img.ObjectKey == eif.File.ObjectKey &&
+                img.Type == newType, token);
+
+            if (!existsImage)
+            {
+                var exitImage = new ExitImage
+                {
+                    ExitId = eo.Id,
+                    ObjectKey = eif.File.ObjectKey,
+                    Type = newType,
+                };
+
+                _eventDbContext.ExitImages.Add(exitImage);
+            }
+        }
+    }
+    
+    string ConvertImageType(string? oldType)
+    {
+        return oldType switch
+        {
+            "Plate" => "PLATE_NUMBER",
+            "Overview" => "PANORAMA",
+            "Vehicle" => "VEHICLE",
+        };
     }
 }

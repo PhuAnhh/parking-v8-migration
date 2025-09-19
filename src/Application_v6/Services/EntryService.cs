@@ -24,7 +24,7 @@ public class EntryService
         var entries = await _parkingDbContext.EventIns
             .Where(e => !e.Deleted && e.CreatedUtc >= fromDate && e.Status == "Parking")
             .Include(e => e.EventInFiles)
-            .ThenInclude(eif => eif.File)
+                .ThenInclude(eif => eif.File)
             .ToListAsync(token);
 
         foreach (var ei in entries)
@@ -98,10 +98,6 @@ public class EntryService
                 };
 
                 _eventDbContext.EntryImages.Add(entryImage);
-                
-                // var filePath = Path.Combine("D:/images", eif.File.ObjectKey);
-                // var contentType = eif.File.ContentType ?? "image/jpeg";
-                // await _minioService.UploadFileAsync(eif.File.ObjectKey, filePath, contentType, token);
             }
         }
     }

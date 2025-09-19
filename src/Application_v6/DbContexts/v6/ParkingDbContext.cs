@@ -17,6 +17,7 @@ public class ParkingDbContext : DbContext
     public DbSet<EventIn> EventIns  { get; set; }
     public DbSet<EventInFile> EventInFiles { get; set; }
     public DbSet<EventOut> EventOuts { get; set; }
+    public DbSet<EventOutFile> EventOutFiles { get; set; }
     public DbSet<File> Files { get; set; }
 
     public ParkingDbContext(DbContextOptions<ParkingDbContext> options) : base(options) {}
@@ -33,6 +34,7 @@ public class ParkingDbContext : DbContext
         modelBuilder.ApplyConfiguration(new EventInConfiguration());
         modelBuilder.ApplyConfiguration(new EventInFileConfiguration());
         modelBuilder.ApplyConfiguration(new EventOutConfiguration());
+        modelBuilder.ApplyConfiguration(new EventOutFileConfiguration());
         modelBuilder.ApplyConfiguration(new FileConfiguration());
     }
 }
