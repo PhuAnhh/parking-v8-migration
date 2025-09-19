@@ -28,7 +28,9 @@ static class Program
         var services = new ServiceCollection();
 
         services.AddDbContext<ParkingDbContext>(opt =>
-            opt.UseSqlServer(config.GetConnectionString("Parking")));
+            opt.UseSqlServer(config.GetConnectionString("Parking"))  .LogTo(s => System.Diagnostics.Debug.WriteLine(s))
+                .EnableDetailedErrors()
+                .EnableSensitiveDataLogging());
 
         services.AddDbContext<EventDbContext>(opt =>
             opt.UseNpgsql(config.GetConnectionString("Event")));

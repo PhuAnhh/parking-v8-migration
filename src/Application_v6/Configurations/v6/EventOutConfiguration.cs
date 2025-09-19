@@ -12,7 +12,6 @@ public class EventOutConfiguration : IEntityTypeConfiguration<EventOut>
         builder.HasKey(n => n.Id);
         builder.Property(x => x.Id).HasColumnName("Id");
         builder.Property(x => x.IdentityId).HasColumnName("IdentityId");
-        builder.Property(x => x.IdentityId).HasColumnName("IdentityId");
         builder.Property(x => x.LaneId).HasColumnName("LaneId");
         builder.Property(x => x.PlateNumber).HasColumnName("PlateNumber");
         builder.Property(x => x.DiscountAmount).HasColumnName("DiscountAmount");

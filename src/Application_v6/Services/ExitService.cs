@@ -6,110 +6,121 @@ using Application_v6.Entities.v8;
 
 namespace Application_v6.Services;
 
-public class ExitService
+public class ExitService(ParkingDbContext parkingDbContext, EventDbContext eventDbContext)
 {
-    private readonly ParkingDbContext _parkingDbContext;
-    private readonly EventDbContext _eventDbContext;
-
-    public ExitService(ParkingDbContext parkingDbContext, EventDbContext eventDbContext)
-    {
-        _parkingDbContext = parkingDbContext;
-        _eventDbContext = eventDbContext;
-    }
-
     public async Task InsertExit(DateTime fromDate, Action<string> log, CancellationToken token)
     {
         int inserted = 0;
         int skipped = 0;
 
-        var exits = await _parkingDbContext.EventOuts
+        // var exits = await parkingDbContext.EventOuts.AsQueryable().AsNoTracking()
+        //     .Where(e => !e.Deleted && e.CreatedUtc >= fromDate)
+        //     .Include(e => e.EventOutFiles)
+        //     .ThenInclude(eif => eif.File)
+        //     .ToListAsync(cancellationToken: token);
+
+        var query = parkingDbContext.EventOuts.AsNoTracking()
             .Where(e => !e.Deleted && e.CreatedUtc >= fromDate)
             .Include(e => e.EventOutFiles)
-            .ThenInclude(eif => eif.File)
-            .ToListAsync();
+            .ThenInclude(eif => eif.File);
 
-        foreach (var eo in exits)
+        var totalCount = await query.CountAsync(token);
+        var batchSize = 1000;
+
+        for (int i = 0; i < totalCount; i += batchSize)
         {
-            token.ThrowIfCancellationRequested();
+            var exits = await query
+                .OrderBy(e => e.CreatedUtc)
+                .Skip(i)
+                .Take(batchSize)
+                .ToListAsync(token);
 
-            var existsExit = await _eventDbContext.Exits.AnyAsync(e => e.Id == eo.Id);
-            var existsCustomer = await _eventDbContext.Customers.AnyAsync(c => c.Id == eo.CustomerId, token);
-
-            var eventIn = await _parkingDbContext.EventIns
-                .Include(ei => ei.EventInFiles)
-                .ThenInclude(eif => eif.File)
-                .FirstOrDefaultAsync(ei => ei.Id == eo.EventInId, token);
-
-            if (eventIn == null) continue;
-
-            var existsAccessKey = await _eventDbContext.AccessKeys
-                .AnyAsync(ak => ak.Id == eventIn.IdentityId, token);
-
-            if (!existsAccessKey) continue;
-
-            var existsEntry = await _eventDbContext.Entries.AnyAsync(e => e.Id == eventIn.Id, token);
-
-            if (!existsEntry)
+            foreach (var eo in exits)
             {
-                var entry = new Entry
+                token.ThrowIfCancellationRequested();
+
+                var existsExit = await eventDbContext.Exits.AnyAsync(e => e.Id == eo.Id, cancellationToken: token);
+                var existsCustomer = await eventDbContext.Customers.AnyAsync(c => c.Id == eo.CustomerId, token);
+
+                var eventIn = await parkingDbContext.EventIns
+                    .Include(ei => ei.EventInFiles)
+                    .ThenInclude(eif => eif.File)
+                    .FirstOrDefaultAsync(ei => ei.Id == eo.EventInId, token);
+
+                if (eventIn == null) continue;
+
+                var existsAccessKey = await eventDbContext.AccessKeys
+                    .AnyAsync(ak => ak.Id == eventIn.IdentityId, token);
+
+                if (!existsAccessKey) continue;
+
+                var existsEntry = await eventDbContext.Entries.AnyAsync(e => e.Id == eventIn.Id, token);
+
+                if (!existsEntry)
                 {
-                    Id = eventIn.Id,
-                    PlateNumber = eventIn.PlateNumber,
-                    DeviceId = eventIn.LaneId,
-                    AccessKeyId = eventIn.IdentityId,
-                    Exited = true,
-                    Amount = eventIn.TotalPaid,
-                    Deleted = false,
-                    Note = eventIn.Note,
-                    CreatedBy = eventIn.CreatedBy,
-                    CreatedUtc = eventIn.CreatedUtc,
-                    UpdatedUtc = eventIn.UpdatedUtc,
-                    CustomerId = (eventIn.CustomerId.HasValue &&
-                                  await _eventDbContext.Customers.AnyAsync(c => c.Id == eventIn.CustomerId, token))
-                        ? eventIn.CustomerId
-                        : null
-                };
+                    var entry = new Entry
+                    {
+                        Id = eventIn.Id,
+                        PlateNumber = eventIn.PlateNumber,
+                        DeviceId = eventIn.LaneId,
+                        AccessKeyId = eventIn.IdentityId,
+                        Exited = true,
+                        Amount = eventIn.TotalPaid,
+                        Deleted = false,
+                        Note = eventIn.Note,
+                        CreatedBy = eventIn.CreatedBy,
+                        CreatedUtc = eventIn.CreatedUtc,
+                        UpdatedUtc = eventIn.UpdatedUtc,
+                        CustomerId = (eventIn.CustomerId.HasValue &&
+                                      await eventDbContext.Customers.AnyAsync(c => c.Id == eventIn.CustomerId, token))
+                            ? eventIn.CustomerId
+                            : null
+                    };
 
-                _eventDbContext.Entries.Add(entry);
-                await InsertEntryImagesAsync(eventIn, token);
-            }
+                    eventDbContext.Entries.Add(entry);
+                    await InsertEntryImagesAsync(eventIn, token);
+                }
 
-            if (!existsExit)
-            {
-                var exit = new Exit
+                if (!existsExit)
                 {
-                    Id = eo.Id,
-                    EntryId = eo.EventInId,
-                    AccessKeyId = eo.IdentityId,
-                    DeviceId = eo.LaneId,
-                    PlateNumber = eo.PlateNumber,
-                    CustomerId = existsCustomer ? eo.CustomerId : null,
-                    Amount = eo.Charge,
-                    DiscountAmount = eo.DiscountAmount,
-                    Note = eo.Note,
-                    CreatedBy = eo.CreatedBy,
-                    CreatedUtc = eo.CreatedUtc,
-                    UpdatedUtc = eo.UpdatedUtc,
-                };
+                    var exit = new Exit
+                    {
+                        Id = eo.Id,
+                        EntryId = eo.EventInId,
+                        AccessKeyId = eo.IdentityId,
+                        DeviceId = eo.LaneId,
+                        PlateNumber = eo.PlateNumber,
+                        CustomerId = existsCustomer ? eo.CustomerId : null,
+                        Amount = eo.Charge,
+                        DiscountAmount = eo.DiscountAmount,
+                        Note = eo.Note,
+                        CreatedBy = eo.CreatedBy,
+                        CreatedUtc = eo.CreatedUtc,
+                        UpdatedUtc = eo.UpdatedUtc,
+                    };
 
-                _eventDbContext.Exits.Add(exit);
-                await _eventDbContext.SaveChangesAsync(token);
+                    eventDbContext.Exits.Add(exit);
+                    await eventDbContext.SaveChangesAsync(token);
 
-                await InsertExitImagesAsync(eo, token);
-                await _eventDbContext.SaveChangesAsync(token);
+                    await InsertExitImagesAsync(eo, token);
+                    await eventDbContext.SaveChangesAsync(token);
 
-                inserted++;
-                log($"[INSERTED] {eo.Id}");
-            }
-            else
-            {
-                skipped++;
-                log($"[SKIPPED] {eo.Id}");
+                    inserted++;
+                    log($"[INSERTED] {eo.Id}");
+                }
+                else
+                {
+                    skipped++;
+                    log($"[SKIPPED] {eo.Id}");
+                }
+
+                log($"Tổng: {exits.Count}");
             }
         }
 
+
         log("========== KẾT QUẢ ==========");
-        log($"Tổng: {exits.Count}");
+
         log($"Thành công: {inserted}");
         log($"Tồn tại: {skipped}");
     }
@@ -124,7 +135,7 @@ public class ExitService
 
             var newType = ConvertImageType(eif.ImageType);
 
-            bool existsImage = await _eventDbContext.EntryImages.AnyAsync(img =>
+            bool existsImage = await eventDbContext.EntryImages.AnyAsync(img =>
                 img.EntryId == ei.Id &&
                 img.ObjectKey == eif.File.ObjectKey &&
                 img.Type == newType, token);
@@ -138,7 +149,7 @@ public class ExitService
                     Type = newType,
                 };
 
-                _eventDbContext.EntryImages.Add(entryImage);
+                eventDbContext.EntryImages.Add(entryImage);
             }
         }
     }
@@ -153,7 +164,7 @@ public class ExitService
 
             var newType = ConvertImageType(eif.ImageType);
 
-            bool existsImage = await _eventDbContext.ExitImages.AnyAsync(img =>
+            bool existsImage = await eventDbContext.ExitImages.AnyAsync(img =>
                 img.ExitId == eo.Id &&
                 img.ObjectKey == eif.File.ObjectKey &&
                 img.Type == newType, token);
@@ -167,7 +178,7 @@ public class ExitService
                     Type = newType,
                 };
 
-                _eventDbContext.ExitImages.Add(exitImage);
+                eventDbContext.ExitImages.Add(exitImage);
             }
         }
     }

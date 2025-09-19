@@ -8,20 +8,22 @@ namespace Application_v6.DbContexts.v6;
 public class ParkingDbContext : DbContext
 {
     public DbSet<Identity> Identites { get; set; }
-    public DbSet<IdentityGroup>  IdentityGroups { get; set; }
+    public DbSet<IdentityGroup> IdentityGroups { get; set; }
     public DbSet<Customer> Customers { get; set; }
     public DbSet<CustomerGroup> CustomerGroups { get; set; }
     public DbSet<Vehicle> Vehicles { get; set; }
     public DbSet<VehicleIdentity> VehicleIdentities { get; set; }
     public DbSet<Lane> Lanes { get; set; }
-    public DbSet<EventIn> EventIns  { get; set; }
+    public DbSet<EventIn> EventIns { get; set; }
     public DbSet<EventInFile> EventInFiles { get; set; }
     public DbSet<EventOut> EventOuts { get; set; }
     public DbSet<EventOutFile> EventOutFiles { get; set; }
     public DbSet<File> Files { get; set; }
 
-    public ParkingDbContext(DbContextOptions<ParkingDbContext> options) : base(options) {}
-    
+    public ParkingDbContext(DbContextOptions<ParkingDbContext> options) : base(options)
+    {
+    }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfiguration(new IdentityConfiguration());
@@ -36,5 +38,12 @@ public class ParkingDbContext : DbContext
         modelBuilder.ApplyConfiguration(new EventOutConfiguration());
         modelBuilder.ApplyConfiguration(new EventOutFileConfiguration());
         modelBuilder.ApplyConfiguration(new FileConfiguration());
+    }
+
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        optionsBuilder.LogTo(Console.WriteLine);
+        // Add your database provider configuration, e.g.,
+        // optionsBuilder.UseSqlServer("YourConnectionString");
     }
 }
