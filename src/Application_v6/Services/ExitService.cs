@@ -25,7 +25,7 @@ public class ExitService
         var exits = await _parkingDbContext.EventOuts
             .Where(e => !e.Deleted && e.CreatedUtc >= fromDate)
             .Include(e => e.EventOutFiles)
-                .ThenInclude(eif => eif.File)
+            .ThenInclude(eif => eif.File)
             .ToListAsync();
 
         foreach (var eo in exits)
@@ -37,11 +37,15 @@ public class ExitService
 
             var eventIn = await _parkingDbContext.EventIns
                 .Include(ei => ei.EventInFiles)
-                    .ThenInclude(eif => eif.File)
+                .ThenInclude(eif => eif.File)
                 .FirstOrDefaultAsync(ei => ei.Id == eo.EventInId, token);
-            
-            if (eventIn == null)
-                continue;
+
+            if (eventIn == null) continue;
+
+            var existsAccessKey = await _eventDbContext.AccessKeys
+                .AnyAsync(ak => ak.Id == eventIn.IdentityId, token);
+
+            if (!existsAccessKey) continue;
 
             var existsEntry = await _eventDbContext.Entries.AnyAsync(e => e.Id == eventIn.Id, token);
 
@@ -68,8 +72,6 @@ public class ExitService
 
                 _eventDbContext.Entries.Add(entry);
                 await InsertEntryImagesAsync(eventIn, token);
-                
-                log($"[INSERT-ENTRY] Entry {entry.Id} được tạo kèm Exit");
             }
 
             if (!existsExit)
@@ -91,17 +93,18 @@ public class ExitService
                 };
 
                 _eventDbContext.Exits.Add(exit);
-                await InsertExitImagesAsync(eo, token);
+                await _eventDbContext.SaveChangesAsync(token);
 
+                await InsertExitImagesAsync(eo, token);
                 await _eventDbContext.SaveChangesAsync(token);
 
                 inserted++;
-                log($"[INSERT] {eo.Id} đã thêm vào Event");
+                log($"[INSERTED] {eo.Id}");
             }
             else
             {
                 skipped++;
-                log($"[SKIP] {eo.Id} đã tồn tại");
+                log($"[SKIPPED] {eo.Id}");
             }
         }
 
@@ -110,7 +113,7 @@ public class ExitService
         log($"Thành công: {inserted}");
         log($"Tồn tại: {skipped}");
     }
-    
+
     private async Task InsertEntryImagesAsync(EventIn ei, CancellationToken token)
     {
         if (ei.EventInFiles == null || !ei.EventInFiles.Any()) return;
@@ -139,7 +142,7 @@ public class ExitService
             }
         }
     }
-    
+
     private async Task InsertExitImagesAsync(EventOut eo, CancellationToken token)
     {
         if (eo.EventOutFiles == null || !eo.EventOutFiles.Any()) return;
@@ -168,7 +171,7 @@ public class ExitService
             }
         }
     }
-    
+
     string ConvertImageType(string? oldType)
     {
         return oldType switch

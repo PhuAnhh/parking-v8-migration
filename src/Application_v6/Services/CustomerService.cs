@@ -34,9 +34,6 @@ public class CustomerService
 
             var existsResource = await _resourceDbContext.Customers.AnyAsync(c8 => c8.Id == c.Id);
             var existsEvent = await _eventDbContext.Customers.AnyAsync(c8 => c8.Id == c.Id);
-            
-            var existsCR = await _eventDbContext.Customers.AnyAsync(c8 => c8.Id == c.Id);
-            var existsCE = await _eventDbContext.Customers.AnyAsync(c8 => c8.Id == c.Id);
 
             if (!existsResource && !existsEvent)
             {
@@ -45,7 +42,7 @@ public class CustomerService
                     Id = c.Id,
                     Name = c.Name,
                     Code = c.Code,
-                    CollectionId = existsCR ? c.CustomerGroupId : null,
+                    CollectionId = c.CustomerGroupId,
                     Address = c.Address,
                     PhoneNumber = c.PhoneNumber,
                     Deleted = c.Deleted,
@@ -58,7 +55,7 @@ public class CustomerService
                     Id = c.Id,
                     Name = c.Name,
                     Code = c.Code,
-                    CollectionId = existsCE ? c.CustomerGroupId : null,
+                    CollectionId = c.CustomerGroupId,
                     Address = c.Address,
                     PhoneNumber = c.PhoneNumber,
                     Deleted = c.Deleted,
@@ -73,12 +70,12 @@ public class CustomerService
                 await _eventDbContext.SaveChangesAsync(token);
 
                 inserted++;
-                log($"[INSERT] {c.Id} - {c.Name} đã thêm vào Event & Resource");
+                log($"[INSERTED] {c.Id} - {c.Name}");
             }
             else
             {
                 skipped++;
-                log($"[SKIP] {c.Id} - {c.Name} đã tồn tại");
+                log($"[SKIPPED] {c.Id} - {c.Name}");
             }
         }
 

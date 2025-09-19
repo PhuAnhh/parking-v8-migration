@@ -24,7 +24,7 @@ public class EntryService
         var entries = await _parkingDbContext.EventIns
             .Where(e => !e.Deleted && e.CreatedUtc >= fromDate && e.Status == "Parking")
             .Include(e => e.EventInFiles)
-                .ThenInclude(eif => eif.File)
+            .ThenInclude(eif => eif.File)
             .ToListAsync(token);
 
         foreach (var ei in entries)
@@ -58,12 +58,12 @@ public class EntryService
                 await _eventDbContext.SaveChangesAsync(token);
 
                 inserted++;
-                log($"[INSERT] {ei.Id} đã thêm vào Event");
+                log($"[INSERTED] {ei.Id}");
             }
             else
             {
                 skipped++;
-                log($"[SKIP] {ei.Id} đã tồn tại");
+                log($"[SKIPPED] {ei.Id}");
             }
         }
 

@@ -11,7 +11,8 @@ public class AccessKeyCollectionService
     private readonly EventDbContext _eventDbContext;
     private readonly ResourceDbContext _resourceDbContext;
 
-    public AccessKeyCollectionService(ParkingDbContext parkingDbContext, EventDbContext eventDbContext, ResourceDbContext resourceDbContext)
+    public AccessKeyCollectionService(ParkingDbContext parkingDbContext, EventDbContext eventDbContext,
+        ResourceDbContext resourceDbContext)
     {
         _parkingDbContext = parkingDbContext;
         _eventDbContext = eventDbContext;
@@ -30,10 +31,10 @@ public class AccessKeyCollectionService
         foreach (var ig in identityGroups)
         {
             token.ThrowIfCancellationRequested();
-            
+
             var existsResource = await _eventDbContext.AccessKeyCollections.AnyAsync(ac => ac.Id == ig.Id);
             var existsEvent = await _resourceDbContext.AccessKeyCollections.AnyAsync(ac => ac.Id == ig.Id);
-                
+
             if (!existsResource && !existsEvent)
             {
                 var aKCResource = new AccessKeyCollection
@@ -46,7 +47,7 @@ public class AccessKeyCollectionService
                     CreatedUtc = ig.CreatedUtc,
                     UpdatedUtc = ig.UpdatedUtc,
                 };
-                
+
                 var aKCEvent = new AccessKeyCollection
                 {
                     Id = ig.Id,
@@ -57,20 +58,20 @@ public class AccessKeyCollectionService
                     CreatedUtc = ig.CreatedUtc,
                     UpdatedUtc = ig.UpdatedUtc,
                 };
-                
+
                 _resourceDbContext.AccessKeyCollections.Add(aKCResource);
                 _eventDbContext.AccessKeyCollections.Add(aKCEvent);
-                
+
                 await _eventDbContext.SaveChangesAsync(token);
                 await _resourceDbContext.SaveChangesAsync(token);
 
                 inserted++;
-                log($"[INSERT] {ig.Id} - {ig.Name} đã thêm vào Event & Resource");
+                log($"[INSERTED] {ig.Id} - {ig.Name}");
             }
             else
             {
                 skipped++;
-                log($"[SKIP] {ig.Id} - {ig.Name} đã tồn tại");
+                log($"[SKIPPED] {ig.Id} - {ig.Name}");
             }
         }
 

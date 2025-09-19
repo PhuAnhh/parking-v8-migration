@@ -11,13 +11,14 @@ public class DeviceService
     private readonly EventDbContext _eventDbContext;
     private readonly ResourceDbContext _resourceDbContext;
 
-    public DeviceService(ParkingDbContext parkingDbContext, EventDbContext eventDbContext, ResourceDbContext resourceDbContext)
+    public DeviceService(ParkingDbContext parkingDbContext, EventDbContext eventDbContext,
+        ResourceDbContext resourceDbContext)
     {
         _parkingDbContext = parkingDbContext;
         _eventDbContext = eventDbContext;
         _resourceDbContext = resourceDbContext;
     }
-    
+
     public async Task InsertDevice(DateTime fromDate, Action<string> log, CancellationToken token)
     {
         int inserted = 0;
@@ -30,10 +31,10 @@ public class DeviceService
         foreach (var l in lanes)
         {
             token.ThrowIfCancellationRequested();
-            
+
             var existsResource = await _resourceDbContext.Devices.AnyAsync(d => d.Id == l.Id);
             var existsEvent = await _eventDbContext.Devices.AnyAsync(d => d.Id == l.Id);
-            
+
             if (!existsResource && !existsEvent)
             {
                 var device = new Device
@@ -47,20 +48,20 @@ public class DeviceService
                     CreatedUtc = l.CreatedUtc,
                     UpdatedUtc = l.UpdatedUtc,
                 };
-                
+
                 _resourceDbContext.Devices.Add(device);
                 _eventDbContext.Devices.Add(device);
-                
+
                 await _resourceDbContext.SaveChangesAsync(token);
                 await _eventDbContext.SaveChangesAsync(token);
 
                 inserted++;
-                log($"[INSERT] {l.Id} - {l.Name} đã thêm vào Event & Resource" );
+                log($"[INSERTED] {l.Id} - {l.Name}");
             }
             else
             {
                 skipped++;
-                log($"[SKIP] {l.Id} - {l.Name} đã tồn tại" );
+                log($"[SKIPPED] {l.Id} - {l.Name}");
             }
         }
 

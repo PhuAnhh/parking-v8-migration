@@ -12,7 +12,8 @@ public class CustomerCollectionService
     private readonly EventDbContext _eventDbContext;
     private readonly ResourceDbContext _resourceDbContext;
 
-    public CustomerCollectionService(ParkingDbContext parkingDbContext, EventDbContext eventDbContext, ResourceDbContext resourceDbContext)
+    public CustomerCollectionService(ParkingDbContext parkingDbContext, EventDbContext eventDbContext,
+        ResourceDbContext resourceDbContext)
     {
         _parkingDbContext = parkingDbContext;
         _eventDbContext = eventDbContext;
@@ -31,7 +32,7 @@ public class CustomerCollectionService
         foreach (var cg in customerCollections)
         {
             token.ThrowIfCancellationRequested();
-            
+
             var existsResource = await _resourceDbContext.CustomerCollections.AnyAsync(cc => cc.Id == cg.Id);
             var existsEvent = await _eventDbContext.CustomerCollections.AnyAsync(cc => cc.Id == cg.Id);
 
@@ -47,7 +48,7 @@ public class CustomerCollectionService
                     CreatedUtc = cg.CreatedUtc,
                     UpdatedUtc = cg.UpdatedUtc,
                 };
-                
+
                 var cCEvent = new EventCustomerCollection
                 {
                     Id = cg.Id,
@@ -57,20 +58,20 @@ public class CustomerCollectionService
                     CreatedUtc = cg.CreatedUtc,
                     UpdatedUtc = cg.UpdatedUtc,
                 };
-                
+
                 _resourceDbContext.CustomerCollections.Add(cCResource);
                 _eventDbContext.CustomerCollections.Add(cCEvent);
-                
+
                 await _resourceDbContext.SaveChangesAsync(token);
                 await _eventDbContext.SaveChangesAsync(token);
 
                 inserted++;
-                log($"[INSERT] {cg.Id} - {cg.Name} đã thêm vào Event & Resource" );
+                log($"[INSERTED] {cg.Id} - {cg.Name}");
             }
             else
             {
                 skipped++;
-                log($"[SKIP] {cg.Id} - {cg.Name} đã tồn tại" );
+                log($"[SKIPPED] {cg.Id} - {cg.Name}");
             }
         }
 
