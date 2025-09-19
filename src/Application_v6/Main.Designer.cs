@@ -48,6 +48,7 @@ partial class Main
         cmb.Name = "cmb";
         cmb.Size = new System.Drawing.Size(262, 32);
         cmb.TabIndex = 0;
+        cmb.SelectedIndex = 0;
         // 
         // dtp
         // 
