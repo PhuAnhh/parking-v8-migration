@@ -31,10 +31,10 @@ public class AccessKeyCollectionService
         {
             token.ThrowIfCancellationRequested();
             
-            var exitedResource = await _eventDbContext.AccessKeyCollections.AnyAsync(ac => ac.Id == ig.Id);
-            var exitedEvent = await _resourceDbContext.AccessKeyCollections.AnyAsync(ac => ac.Id == ig.Id);
+            var existsResource = await _eventDbContext.AccessKeyCollections.AnyAsync(ac => ac.Id == ig.Id);
+            var existsEvent = await _resourceDbContext.AccessKeyCollections.AnyAsync(ac => ac.Id == ig.Id);
                 
-            if (!exitedResource && !exitedEvent)
+            if (!existsResource && !existsEvent)
             {
                 var aKCResource = new AccessKeyCollection
                 {
@@ -61,8 +61,8 @@ public class AccessKeyCollectionService
                 _resourceDbContext.AccessKeyCollections.Add(aKCResource);
                 _eventDbContext.AccessKeyCollections.Add(aKCEvent);
                 
-                await _eventDbContext.SaveChangesAsync();
-                await _resourceDbContext.SaveChangesAsync();
+                await _eventDbContext.SaveChangesAsync(token);
+                await _resourceDbContext.SaveChangesAsync(token);
 
                 inserted++;
                 log($"[INSERT] {ig.Id} - {ig.Name} đã thêm vào Event & Resource");

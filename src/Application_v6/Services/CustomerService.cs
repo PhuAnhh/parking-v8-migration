@@ -32,20 +32,20 @@ public class CustomerService
         {
             token.ThrowIfCancellationRequested();
 
-            var exitedResource = await _resourceDbContext.Customers.AnyAsync(c8 => c8.Id == c.Id);
-            var exitedEvent = await _eventDbContext.Customers.AnyAsync(c8 => c8.Id == c.Id);
+            var existsResource = await _resourceDbContext.Customers.AnyAsync(c8 => c8.Id == c.Id);
+            var existsEvent = await _eventDbContext.Customers.AnyAsync(c8 => c8.Id == c.Id);
+            
+            var existsCR = await _eventDbContext.Customers.AnyAsync(c8 => c8.Id == c.Id);
+            var existsCE = await _eventDbContext.Customers.AnyAsync(c8 => c8.Id == c.Id);
 
-            if (!exitedResource && !exitedEvent)
+            if (!existsResource && !existsEvent)
             {
                 var cResource = new Customer
                 {
                     Id = c.Id,
                     Name = c.Name,
                     Code = c.Code,
-                    CollectionId = c.CustomerGroupId != null 
-                                   && await _resourceDbContext.CustomerCollections.AnyAsync(col => col.Id == c.CustomerGroupId, token)
-                        ? c.CustomerGroupId 
-                        : null,
+                    CollectionId = existsCR ? c.CustomerGroupId : null,
                     Address = c.Address,
                     PhoneNumber = c.PhoneNumber,
                     Deleted = c.Deleted,
@@ -58,10 +58,7 @@ public class CustomerService
                     Id = c.Id,
                     Name = c.Name,
                     Code = c.Code,
-                    CollectionId = c.CustomerGroupId != null 
-                                   && await _eventDbContext.CustomerCollections.AnyAsync(col => col.Id == c.CustomerGroupId, token)
-                        ? c.CustomerGroupId 
-                        : null,
+                    CollectionId = existsCE ? c.CustomerGroupId : null,
                     Address = c.Address,
                     PhoneNumber = c.PhoneNumber,
                     Deleted = c.Deleted,

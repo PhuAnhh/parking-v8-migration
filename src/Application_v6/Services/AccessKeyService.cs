@@ -35,12 +35,12 @@ public class AccessKeyService
         {
             token.ThrowIfCancellationRequested();
             
-            var exitedResource = await _resourceDbContext.AccessKeys.AnyAsync(ak => ak.Id == i.Id);
-            var exitedEvent = await _eventDbContext.AccessKeys.AnyAsync(ak => ak.Id == i.Id);
+            var existsResource = await _resourceDbContext.AccessKeys.AnyAsync(ak => ak.Id == i.Id);
+            var existsEvent = await _eventDbContext.AccessKeys.AnyAsync(ak => ak.Id == i.Id);
 
-            if (!exitedResource && !exitedEvent)
+            if (!existsResource && !existsEvent)
             {
-                var aKResource = new AccessKey
+                var accessKey = new AccessKey
                 {
                     Id = i.Id,
                     Name = i.Name,
@@ -58,26 +58,8 @@ public class AccessKeyService
                     UpdatedUtc = i.UpdatedUtc,
                 };
                 
-                var aKEvent = new AccessKey
-                {
-                    Id = i.Id,
-                    Name = i.Name,
-                    Code = i.Code,
-                    Type = i.Type.ToUpper(),
-                    CollectionId = i.IdentityGroupId,
-                    Status = i.Status switch
-                    {
-                        "InUse"  => "IN_USE",
-                        "Locked" => "LOCKED",
-                        "NotUse" => "UN_USED"
-                    },
-                    Deleted = i.Deleted,
-                    CreatedUtc = i.CreatedUtc,
-                    UpdatedUtc = i.UpdatedUtc,
-                };
-                
-                _resourceDbContext.AccessKeys.Add(aKResource);
-                _eventDbContext.AccessKeys.Add(aKEvent);
+                _resourceDbContext.AccessKeys.Add(accessKey);
+                _eventDbContext.AccessKeys.Add(accessKey);
                 
                 await _resourceDbContext.SaveChangesAsync(token);
                 await _eventDbContext.SaveChangesAsync(token);
@@ -129,11 +111,31 @@ public class AccessKeyService
 
                 _resourceDbContext.AccessKeys.Add(ak);
                 _eventDbContext.AccessKeys.Add(ak);
+                
                 await _resourceDbContext.SaveChangesAsync(token);
                 await _eventDbContext.SaveChangesAsync(token);
 
                 inserted++;
                 log($"[INSERT] {v.Id} - {v.PlateNumber} (Vehicle) đã thêm vào Event & Resource");
+                
+                var relatedIdentities = await _parkingDbContext.VehicleIdentities
+                    .Where(vi => vi.VehicleId == v.Id)
+                    .ToListAsync(token);
+                
+                foreach (var vi in relatedIdentities)
+                {
+                    var metric = new AccessKeyMetric
+                    {
+                        AccessKeyId = v.Id,
+                        RelatedAccessKeyId = vi.IdentityId
+                    };
+
+                    _resourceDbContext.AccessKeyMetrics.Add(metric);
+                    _eventDbContext.AccessKeyMetrics.Add(metric);
+                }
+
+                await _resourceDbContext.SaveChangesAsync(token);
+                await _eventDbContext.SaveChangesAsync(token);
             }
             else
             {

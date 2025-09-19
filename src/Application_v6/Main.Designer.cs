@@ -29,20 +29,24 @@ partial class Main
     /// </summary>
     private void InitializeComponent()
     {
+        components = new System.ComponentModel.Container();
+        System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Main));
         cmb = new System.Windows.Forms.ComboBox();
         dtp = new System.Windows.Forms.DateTimePicker();
         btnStart = new System.Windows.Forms.Button();
         btnStop = new System.Windows.Forms.Button();
         txtLog = new System.Windows.Forms.TextBox();
+        tipDateTime = new System.Windows.Forms.ToolTip(components);
         SuspendLayout();
         // 
         // cmb
         // 
+        cmb.Font = new System.Drawing.Font("Cascadia Mono Light", 10.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)0));
         cmb.FormattingEnabled = true;
-        cmb.Items.AddRange(new object[] { "Nhóm định danh", "Định danh", "Nhóm khách hàng", "Khách hàng ", "Làn", "Xe vào bãi", "Xe đã ra" });
-        cmb.Location = new System.Drawing.Point(35, 28);
+        cmb.Items.AddRange(new object[] { "🆔 Nhóm định danh", "🔑 Định danh", "👥 Nhóm khách hàng", "👤 Khách hàng", "🚦 Làn", "🚗 Xe trong bãi", "🚙 Xe đã ra" });
+        cmb.Location = new System.Drawing.Point(23, 27);
         cmb.Name = "cmb";
-        cmb.Size = new System.Drawing.Size(273, 28);
+        cmb.Size = new System.Drawing.Size(262, 32);
         cmb.TabIndex = 0;
         // 
         // dtp
@@ -50,57 +54,66 @@ partial class Main
         dtp.Cursor = System.Windows.Forms.Cursors.Hand;
         dtp.CustomFormat = "dd-MM-yyyy HH:mm:ss";
         dtp.DropDownAlign = System.Windows.Forms.LeftRightAlignment.Right;
+        dtp.Font = new System.Drawing.Font("Cascadia Mono Light", 10.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)0));
         dtp.Format = System.Windows.Forms.DateTimePickerFormat.Custom;
-        dtp.Location = new System.Drawing.Point(375, 29);
+        dtp.Location = new System.Drawing.Point(304, 31);
         dtp.Name = "dtp";
-        dtp.Size = new System.Drawing.Size(371, 27);
+        dtp.Size = new System.Drawing.Size(468, 28);
         dtp.TabIndex = 1;
+        tipDateTime.SetToolTip(dtp, "Giờ UTC");
         // 
         // btnStart
         // 
         btnStart.Cursor = System.Windows.Forms.Cursors.Hand;
-        btnStart.Location = new System.Drawing.Point(157, 85);
+        btnStart.Font = new System.Drawing.Font("Cascadia Mono Light", 10.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)0));
+        btnStart.Location = new System.Drawing.Point(23, 84);
         btnStart.Name = "btnStart";
-        btnStart.Size = new System.Drawing.Size(151, 47);
+        btnStart.Size = new System.Drawing.Size(354, 53);
         btnStart.TabIndex = 2;
-        btnStart.Text = "▶ Start";
+        btnStart.Text = "⚡ Bắt đầu";
         btnStart.UseVisualStyleBackColor = true;
         btnStart.Click += btnStart_Click;
         // 
         // btnStop
         // 
         btnStop.Cursor = System.Windows.Forms.Cursors.Hand;
-        btnStop.Location = new System.Drawing.Point(400, 85);
+        btnStop.Font = new System.Drawing.Font("Cascadia Mono Light", 10.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)0));
+        btnStop.Location = new System.Drawing.Point(398, 84);
         btnStop.Name = "btnStop";
-        btnStop.Size = new System.Drawing.Size(151, 47);
+        btnStop.Size = new System.Drawing.Size(374, 53);
         btnStop.TabIndex = 3;
-        btnStop.Text = "⬛ Stop";
+        btnStop.Text = "⏹️ Dừng";
         btnStop.UseVisualStyleBackColor = true;
         btnStop.Click += btnStop_Click;
         // 
         // txtLog
         // 
-        txtLog.Location = new System.Drawing.Point(64, 177);
+        txtLog.Font = new System.Drawing.Font("Cascadia Mono Light", 7.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)0));
+        txtLog.Location = new System.Drawing.Point(23, 163);
         txtLog.Multiline = true;
         txtLog.Name = "txtLog";
         txtLog.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-        txtLog.Size = new System.Drawing.Size(682, 353);
+        txtLog.Size = new System.Drawing.Size(749, 317);
         txtLog.TabIndex = 5;
         // 
         // Main
         // 
         AutoScaleDimensions = new System.Drawing.SizeF(8F, 20F);
         AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-        ClientSize = new System.Drawing.Size(800, 580);
+        ClientSize = new System.Drawing.Size(800, 506);
         Controls.Add(txtLog);
         Controls.Add(btnStop);
         Controls.Add(btnStart);
         Controls.Add(dtp);
         Controls.Add(cmb);
-        Text = "Form1";
+        Icon = ((System.Drawing.Icon)resources.GetObject("$this.Icon"));
+        StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
+        Text = "Parking v8 Migration";
         ResumeLayout(false);
         PerformLayout();
     }
+
+    private System.Windows.Forms.ToolTip tipDateTime;
 
     private System.Windows.Forms.TextBox txtLog;
 

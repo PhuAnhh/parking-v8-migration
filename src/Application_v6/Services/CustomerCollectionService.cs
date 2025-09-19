@@ -32,10 +32,10 @@ public class CustomerCollectionService
         {
             token.ThrowIfCancellationRequested();
             
-            var exitedResource = await _resourceDbContext.CustomerCollections.AnyAsync(cc => cc.Id == cg.Id);
-            var exitedEvent = await _eventDbContext.CustomerCollections.AnyAsync(cc => cc.Id == cg.Id);
+            var existsResource = await _resourceDbContext.CustomerCollections.AnyAsync(cc => cc.Id == cg.Id);
+            var existsEvent = await _eventDbContext.CustomerCollections.AnyAsync(cc => cc.Id == cg.Id);
 
-            if (!exitedResource && !exitedEvent)
+            if (!existsResource && !existsEvent)
             {
                 var cCResource = new ResourceCustomerCollection
                 {
@@ -66,13 +66,11 @@ public class CustomerCollectionService
 
                 inserted++;
                 log($"[INSERT] {cg.Id} - {cg.Name} đã thêm vào Event & Resource" );
-
             }
             else
             {
                 skipped++;
                 log($"[SKIP] {cg.Id} - {cg.Name} đã tồn tại" );
-
             }
         }
 

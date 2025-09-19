@@ -63,11 +63,11 @@ public partial class Main : Form
                 var insertService = scope.ServiceProvider.GetRequiredService<EntryService>();
                 await insertService.InsertEntry(fromDate, Log, token);
             }
-            // else if (selected == 6)
-            // {
-            //     var insertService = scope.ServiceProvider.GetRequiredService<CustomerService>();
-            //     await insertService.InsertCustomer(fromDate, Log, token);
-            // }
+            else if (selected == 6)
+            {
+                var insertService = scope.ServiceProvider.GetRequiredService<ExitService>();
+                await insertService.InsertExit(fromDate, Log, token);
+            }
             MessageBox.Show("Success", "✔ Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
         catch (OperationCanceledException)

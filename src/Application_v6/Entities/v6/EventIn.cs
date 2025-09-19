@@ -14,4 +14,6 @@ public class EventIn
     public DateTime CreatedUtc { get; set; }
     public DateTime UpdatedUtc { get; set; }
     public string CreatedBy { get; set; }
+    
+    public ICollection<EventInFile>  EventInFiles { get; set; }
 }

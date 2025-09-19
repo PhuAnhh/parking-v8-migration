@@ -31,11 +31,12 @@ public class DeviceService
         {
             token.ThrowIfCancellationRequested();
             
-            var exitedResource = await _resourceDbContext.Devices.AnyAsync(d => d.Id == l.Id);
-            var exitedEvent = await _eventDbContext.Devices.AnyAsync(d => d.Id == l.Id);
-            if (!exitedResource && !exitedEvent)
+            var existsResource = await _resourceDbContext.Devices.AnyAsync(d => d.Id == l.Id);
+            var existsEvent = await _eventDbContext.Devices.AnyAsync(d => d.Id == l.Id);
+            
+            if (!existsResource && !existsEvent)
             {
-                var dResource = new Device
+                var device = new Device
                 {
                     Id = l.Id,
                     Name = l.Name,
@@ -47,19 +48,8 @@ public class DeviceService
                     UpdatedUtc = l.UpdatedUtc,
                 };
                 
-                var dEvent = new Device
-                {
-                    Id = l.Id,
-                    Name = l.Name,
-                    Code = l.Code,
-                    Type = "LANE",
-                    Enabled = l.Enabled,
-                    Deleted = l.Deleted,
-                    CreatedUtc = l.CreatedUtc,
-                    UpdatedUtc = l.UpdatedUtc,
-                };
-                _resourceDbContext.Devices.Add(dResource);
-                _eventDbContext.Devices.Add(dEvent);
+                _resourceDbContext.Devices.Add(device);
+                _eventDbContext.Devices.Add(device);
                 
                 await _resourceDbContext.SaveChangesAsync(token);
                 await _eventDbContext.SaveChangesAsync(token);

@@ -19,12 +19,12 @@ static class Program
         // To customize application configuration such as set high DPI settings or default font,
         // see https://aka.ms/applicationconfiguration.
         ApplicationConfiguration.Initialize();
-        
+
         var config = new ConfigurationBuilder()
             .SetBasePath(AppContext.BaseDirectory)
             .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
             .Build();
-        
+
         var services = new ServiceCollection();
 
         services.AddDbContext<ParkingDbContext>(opt =>
@@ -32,10 +32,10 @@ static class Program
 
         services.AddDbContext<EventDbContext>(opt =>
             opt.UseNpgsql(config.GetConnectionString("Event")));
-        
+
         services.AddDbContext<ResourceDbContext>(opt =>
             opt.UseNpgsql(config.GetConnectionString("Resource")));
-        
+
         // Service
         services.AddTransient<AccessKeyCollectionService>();
         services.AddTransient<AccessKeyService>();
@@ -43,12 +43,13 @@ static class Program
         services.AddTransient<CustomerService>();
         services.AddTransient<DeviceService>();
         services.AddTransient<EntryService>();
-        
+        services.AddTransient<ExitService>();
+
         // Form
         services.AddSingleton<Main>();
-        
+
         var serviceProvider = services.BuildServiceProvider();
-        
+
         Application.Run(serviceProvider.GetRequiredService<Main>());
     }
 }
