@@ -28,7 +28,17 @@ static class Program
         var services = new ServiceCollection();
 
         services.AddDbContext<ParkingDbContext>(opt =>
-            opt.UseSqlServer(config.GetConnectionString("Parking"))  .LogTo(s => System.Diagnostics.Debug.WriteLine(s))
+            opt.UseSqlServer(
+                    config.GetConnectionString("Parking"),
+                    sqlOptions =>
+                    {
+                        sqlOptions.CommandTimeout(300); // tăng timeout
+                        sqlOptions.EnableRetryOnFailure(
+                            maxRetryCount: 5,
+                            maxRetryDelay: TimeSpan.FromSeconds(10),
+                            errorNumbersToAdd: null);
+                    })
+                .LogTo(s => System.Diagnostics.Debug.WriteLine(s))
                 .EnableDetailedErrors()
                 .EnableSensitiveDataLogging());
 

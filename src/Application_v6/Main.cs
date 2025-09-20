@@ -68,6 +68,16 @@ public partial class Main : Form
                 var insertService = scope.ServiceProvider.GetRequiredService<ExitService>();
                 await insertService.InsertExit(fromDate, Log, token);
             }
+            
+            else if (selected == 7)
+            {
+                // anh vaor
+            }
+            else if (selected == 8)
+            {
+                
+            }
+
             MessageBox.Show("Success", "✔ Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
         catch (OperationCanceledException)

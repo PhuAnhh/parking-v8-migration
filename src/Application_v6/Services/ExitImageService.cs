@@ -1,24 +1,22 @@
-using Microsoft.EntityFrameworkCore;
 using Application_v6.DbContexts.v6;
 using Application_v6.DbContexts.v8;
-using Application_v6.Entities.v6;
 using Application_v6.Entities.v8;
 using EFCore.BulkExtensions;
+using Microsoft.EntityFrameworkCore;
 
 namespace Application_v6.Services;
 
-public class ExitService(ParkingDbContext parkingDbContext, EventDbContext eventDbContext)
+public class ExitImageService(ParkingDbContext parkingDbContext, EventDbContext eventDbContext)
 {
-    public async Task InsertExit(DateTime fromDate, Action<string> log, CancellationToken token)
+    public async Task Insert(DateTime fromDate, Action<string> log, CancellationToken token)
     {
         var batchSize = 5000;
         int inserted = 0, skipped = 0;
 
-        var query = parkingDbContext.EventOuts.AsNoTracking()
-            .Where(e => !e.Deleted && e.CreatedUtc >= fromDate)
-            .OrderBy(e => e.CreatedUtc)
-            .Include(e => e.EventOutFiles)
-            .ThenInclude(eif => eif.File);
+        var query = parkingDbContext.EventOutFiles.AsNoTracking()
+            .Include(x => x.EventOut).Include(x => x.File)
+            .Where(e => !e.EventOut.Deleted && e.EventOut.CreatedUtc >= fromDate)
+            .OrderBy(e => e.EventOut.CreatedUtc);
 
         DateTime? lastCreatedUtc = null;
 
@@ -39,7 +37,6 @@ public class ExitService(ParkingDbContext parkingDbContext, EventDbContext event
         {
             var exits = await query
                 .Where(e => lastCreatedUtc == null || e.CreatedUtc > lastCreatedUtc)
-                
                 .OrderBy(e => e.CreatedUtc)
                 .Take(batchSize)
                 .ToListAsync(token);
@@ -141,73 +138,5 @@ public class ExitService(ParkingDbContext parkingDbContext, EventDbContext event
         log("========== KẾT QUẢ ==========");
         log($"Thành công: {inserted}");
         log($"Tồn tại: {skipped}");
-    }
-
-    private async Task InsertEntryImagesAsync(EventIn ei, CancellationToken token)
-    {
-        if (ei.EventInFiles == null || !ei.EventInFiles.Any()) return;
-
-        foreach (var eif in ei.EventInFiles)
-        {
-            if (eif.File == null) continue;
-
-            var newType = ConvertImageType(eif.ImageType);
-
-            bool existsImage = await eventDbContext.EntryImages.AnyAsync(img =>
-                img.EntryId == ei.Id &&
-                img.ObjectKey == eif.File.ObjectKey &&
-                img.Type == newType, token);
-
-            if (!existsImage)
-            {
-                var entryImage = new EntryImage
-                {
-                    EntryId = ei.Id,
-                    ObjectKey = eif.File.ObjectKey,
-                    Type = newType,
-                };
-
-                eventDbContext.EntryImages.Add(entryImage);
-            }
-        }
-    }
-
-    private async Task InsertExitImagesAsync(EventOut eo, CancellationToken token)
-    {
-        if (eo.EventOutFiles == null || !eo.EventOutFiles.Any()) return;
-
-        foreach (var eif in eo.EventOutFiles)
-        {
-            if (eif.File == null) continue;
-
-            var newType = ConvertImageType(eif.ImageType);
-
-            bool existsImage = await eventDbContext.ExitImages.AnyAsync(img =>
-                img.ExitId == eo.Id &&
-                img.ObjectKey == eif.File.ObjectKey &&
-                img.Type == newType, token);
-
-            if (!existsImage)
-            {
-                var exitImage = new ExitImage
-                {
-                    ExitId = eo.Id,
-                    ObjectKey = eif.File.ObjectKey,
-                    Type = newType,
-                };
-
-                eventDbContext.ExitImages.Add(exitImage);
-            }
-        }
-    }
-
-    string ConvertImageType(string? oldType)
-    {
-        return oldType switch
-        {
-            "Plate" => "PLATE_NUMBER",
-            "Overview" => "PANORAMA",
-            "Vehicle" => "VEHICLE",
-        };
     }
 }
