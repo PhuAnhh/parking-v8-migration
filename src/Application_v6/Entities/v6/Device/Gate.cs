@@ -9,6 +9,4 @@ public class Gate
     public bool Deleted { get; set; }
     public DateTime CreatedUtc { get; set; }
     public DateTime UpdatedUtc { get; set; }
-
-    public virtual ICollection<Computer> Computers { get; set; }
 }

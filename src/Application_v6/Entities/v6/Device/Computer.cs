@@ -8,10 +8,4 @@ public class Computer
     public bool Deleted { get; set; }
     public DateTime CreatedUtc { get; set; }
     public DateTime UpdatedUtc { get; set; }
-
-    public Gate Gate { get; set; }
-    public ICollection<Camera> Cameras { get; set; }
-    public ICollection<ControlUnit> ControlUnits { get; set; }
-    public ICollection<Lane> Lanes { get; set; }
-    public ICollection<Led> Leds { get; set; }
 }

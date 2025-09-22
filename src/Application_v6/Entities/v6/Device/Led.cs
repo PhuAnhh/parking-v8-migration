@@ -8,6 +8,4 @@ public class Led
     public bool Deleted { get; set; }
     public DateTime CreatedUtc { get; set; }
     public DateTime UpdatedUtc { get; set; }
-
-    public Computer Computer { get; set; }
 }

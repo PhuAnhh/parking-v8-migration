@@ -34,45 +34,63 @@ public partial class Main : Form
 
             if (selected == 0)
             {
-                var insertService = scope.ServiceProvider.GetRequiredService<AccessKeyCollectionService>();
-                await insertService.InsertAccessKeyCollection(fromDate, Log, token);
-            }
-            else if (selected == 1)
-            {
-                var insertService = scope.ServiceProvider.GetRequiredService<AccessKeyService>();
-                await insertService.InsertAccessKey(fromDate, Log, token);
-            }
-            else if (selected == 2)
-            {
                 var insertService = scope.ServiceProvider.GetRequiredService<CustomerCollectionService>();
                 await insertService.InsertCustomerCollection(fromDate, Log, token);
             }
-            else if (selected == 3)
+            else if (selected == 1)
             {
                 var insertService = scope.ServiceProvider.GetRequiredService<CustomerService>();
                 await insertService.InsertCustomer(fromDate, Log, token);
             }
+            else if (selected == 2)
+            {
+                var insertService = scope.ServiceProvider.GetRequiredService<AccessKeyCollectionService>();
+                await insertService.InsertAccessKeyCollection(fromDate, Log, token);
+            }
+            else if (selected == 3)
+            {
+                var insertService = scope.ServiceProvider.GetRequiredService<AccessKeyService>();
+                await insertService.InsertAccessKey(fromDate, Log, token);
+            }
             else if (selected == 4)
+            {
+                var insertService = scope.ServiceProvider.GetRequiredService<DeviceService>();
+                await insertService.InsertGate(fromDate, Log, token);
+            }
+            else if (selected == 5)
+            {
+                var insertService = scope.ServiceProvider.GetRequiredService<DeviceService>();
+                await insertService.InsertComputer(fromDate, Log, token);
+            }
+            else if (selected == 6)
+            {
+                var insertService = scope.ServiceProvider.GetRequiredService<DeviceService>();
+                await insertService.InsertCamera(fromDate, Log, token);
+            }
+            else if (selected == 7)
+            {
+                var insertService = scope.ServiceProvider.GetRequiredService<DeviceService>();
+                await insertService.InsertControlUnit(fromDate, Log, token);
+            }
+            else if (selected == 8)
             {
                 var insertService = scope.ServiceProvider.GetRequiredService<DeviceService>();
                 await insertService.InsertLane(fromDate, Log, token);
             }
-            else if (selected == 5)
+            else if (selected == 9)
+            {
+                var insertService = scope.ServiceProvider.GetRequiredService<DeviceService>();
+                await insertService.InsertLed(fromDate, Log, token);
+            }
+            else if (selected == 10)
             {
                 var insertService = scope.ServiceProvider.GetRequiredService<EntryService>();
                 await insertService.InsertEntry(fromDate, Log, token);
             }
-            else if (selected == 6)
+            else if (selected == 11)
             {
                 var insertService = scope.ServiceProvider.GetRequiredService<ExitService>();
                 await insertService.InsertExit(fromDate, Log, token);
-            }
-            else if (selected == 7)
-            {
-                // anh vaor
-            }
-            else if (selected == 8)
-            {
             }
             MessageBox.Show("Success", "✔ Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }

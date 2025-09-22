@@ -43,7 +43,7 @@ partial class Main
         // 
         cmb.Font = new System.Drawing.Font("Cascadia Mono Light", 10.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)0));
         cmb.FormattingEnabled = true;
-        cmb.Items.AddRange(new object[] { "🆔 Nhóm định danh", "🔑 Định danh", "👥 Nhóm khách hàng", "👤 Khách hàng", "🚦 Làn", "🚗 Xe trong bãi", "🚙 Xe đã ra" });
+        cmb.Items.AddRange(new object[] { "👥 Nhóm khách hàng", "👤 Khách hàng", "🆔 Nhóm định danh", "🔑 Định danh", "🚪 Cổng", "💻 Máy tính", "📷 Camera", "🎛️ Bộ điều khiển", "🚦 Làn", "💡 Led", "🚗 Xe trong bãi", "🏎️ Xe đã ra" });
         cmb.Location = new System.Drawing.Point(23, 27);
         cmb.Name = "cmb";
         cmb.Size = new System.Drawing.Size(262, 32);
