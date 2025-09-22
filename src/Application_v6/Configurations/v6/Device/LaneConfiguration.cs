@@ -1,19 +1,19 @@
-using Application_v6.Entities.v6;
+using Application_v6.Entities.v6.Device;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace Application_v6.Configurations.v6;
+namespace Application_v6.Configurations.v6.Device;
 
-public class CustomerGroupConfiguration : IEntityTypeConfiguration<CustomerGroup>
+public class LaneConfiguration : IEntityTypeConfiguration<Lane>
 {
-    public void Configure(EntityTypeBuilder<CustomerGroup> builder)
+    public void Configure(EntityTypeBuilder<Lane> builder)
     {
-        builder.ToTable("CustomerGroups");
-        builder.HasKey(x => x.Id);
+        builder.ToTable("Lanes");
+        builder.HasKey(n => n.Id);
         builder.Property(x => x.Id).HasColumnName("Id");
-        builder.Property(x => x.ParentId).HasColumnName("ParentId");
-        builder.Property(x => x.Name).HasColumnName("Name");
         builder.Property(x => x.Code).HasColumnName("Code");
+        builder.Property(x => x.Name).HasColumnName("Name");
+        builder.Property(x => x.Enabled).HasColumnName("Enabled");
         builder.Property(x => x.Deleted).HasColumnName("Deleted");
         builder.Property(x => x.CreatedUtc).HasColumnName("CreatedUtc");
         builder.Property(x => x.UpdatedUtc).HasColumnName("UpdatedUtc");

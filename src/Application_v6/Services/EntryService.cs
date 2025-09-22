@@ -1,74 +1,99 @@
 using Microsoft.EntityFrameworkCore;
 using Application_v6.DbContexts.v6;
 using Application_v6.DbContexts.v8;
-using Application_v6.Entities.v6;
+using Application_v6.Entities.v6.Parking;
 using Application_v6.Entities.v8;
+using EFCore.BulkExtensions;
 
 namespace Application_v6.Services;
 
-public class EntryService
+public class EntryService(ParkingDbContext parkingDbContext, EventDbContext eventDbContext)
 {
-    private readonly ParkingDbContext _parkingDbContext;
-    private readonly EventDbContext _eventDbContext;
-
-    public EntryService(ParkingDbContext parkingDbContext, EventDbContext eventDbContext)
-    {
-        _parkingDbContext = parkingDbContext;
-        _eventDbContext = eventDbContext;
-    }
-
     public async Task InsertEntry(DateTime fromDate, Action<string> log, CancellationToken token)
     {
+        var batchSize = 5000;
         int inserted = 0, skipped = 0;
 
-        var entries = await _parkingDbContext.EventIns
+        var query = parkingDbContext.EventIns.AsNoTracking()
             .Where(e => !e.Deleted && e.CreatedUtc >= fromDate && e.Status == "Parking")
+            .OrderBy(e => e.CreatedUtc)
             .Include(e => e.EventInFiles)
-            .ThenInclude(eif => eif.File)
-            .ToListAsync(token);
+            .ThenInclude(eif => eif.File);
 
-        foreach (var ei in entries)
+        DateTime? lastCreatedUtc = null;
+
+        var existingEntries = new HashSet<Guid>(
+            await eventDbContext.Entries.AsNoTracking().Select(e => e.Id).ToListAsync(token));
+
+        var existingCustomers = new HashSet<Guid>(
+            await eventDbContext.Customers.AsNoTracking().Select(c => c.Id).ToListAsync(token));
+
+        var existingAccessKeys = new HashSet<Guid>(
+            await eventDbContext.AccessKeys.AsNoTracking().Select(ak => ak.Id).ToListAsync(token));
+
+        while (true)
         {
-            token.ThrowIfCancellationRequested();
+            var entries = await query
+                .Where(e => lastCreatedUtc == null || e.CreatedUtc > lastCreatedUtc)
+                .OrderBy(e => e.CreatedUtc)
+                .Take(batchSize)
+                .ToListAsync(token);
 
-            var existsEntry = await _eventDbContext.Entries.AnyAsync(e => e.Id == ei.Id);
-            var existsCustomer = await _eventDbContext.Customers.AnyAsync(c => c.Id == ei.CustomerId, token);
+            if (entries.Count == 0) break;
 
-            if (!existsEntry)
+            var newEntries = new List<Entry>();
+
+            foreach (var ei in entries)
             {
-                var entry = new Entry
+                token.ThrowIfCancellationRequested();
+
+                bool existsEntry = existingEntries.Contains(ei.Id);
+                bool existsCustomer = ei.CustomerId.HasValue && existingCustomers.Contains(ei.CustomerId.Value);
+
+                if (!existingAccessKeys.Contains(ei.IdentityId)) continue;
+
+                if (!existsEntry)
                 {
-                    Id = ei.Id,
-                    AccessKeyId = ei.IdentityId,
-                    DeviceId = ei.LaneId,
-                    PlateNumber = ei.PlateNumber,
-                    CustomerId = existsCustomer ? ei.CustomerId : null,
-                    Exited = false,
-                    Amount = ei.TotalPaid,
-                    CreatedBy = ei.CreatedBy,
-                    Note = ei.Note,
-                    Deleted = ei.Deleted,
-                    CreatedUtc = ei.CreatedUtc,
-                    UpdatedUtc = ei.UpdatedUtc,
-                };
+                    var entry = new Entry
+                    {
+                        Id = ei.Id,
+                        AccessKeyId = ei.IdentityId,
+                        DeviceId = ei.LaneId,
+                        PlateNumber = ei.PlateNumber,
+                        CustomerId = existsCustomer ? ei.CustomerId : null,
+                        Exited = false,
+                        Amount = ei.TotalPaid,
+                        CreatedBy = ei.CreatedBy,
+                        Note = ei.Note,
+                        Deleted = ei.Deleted,
+                        CreatedUtc = ei.CreatedUtc,
+                        UpdatedUtc = ei.UpdatedUtc,
+                    };
 
-                _eventDbContext.Entries.Add(entry);
-                await InsertEntryImagesAsync(ei, token);
+                    newEntries.Add(entry);
+                    await InsertEntryImagesAsync(ei, token);
 
-                await _eventDbContext.SaveChangesAsync(token);
+                    existingEntries.Add(entry.Id);
 
-                inserted++;
-                log($"[INSERTED] {ei.Id}");
+                    inserted++;
+                    log($"[INSERTED] {ei.Id}");
+                }
+                else
+                {
+                    skipped++;
+                    log($"[SKIPPED] {ei.Id}");
+                }
             }
-            else
-            {
-                skipped++;
-                log($"[SKIPPED] {ei.Id}");
-            }
+
+            if (newEntries.Any())
+                await eventDbContext.BulkInsertAsync(newEntries, cancellationToken: token);
+
+            lastCreatedUtc = entries.Last().CreatedUtc;
+
+            log($"Đã xử lý tổng cộng: {inserted + skipped}");
         }
 
         log("========== KẾT QUẢ ==========");
-        log($"Tổng: {entries.Count}");
         log($"Thành công: {inserted}");
         log($"Tồn tại: {skipped}");
     }
@@ -83,7 +108,7 @@ public class EntryService
 
             var newType = ConvertImageType(eif.ImageType);
 
-            bool existsImage = await _eventDbContext.EntryImages.AnyAsync(img =>
+            bool existsImage = await eventDbContext.EntryImages.AnyAsync(img =>
                 img.EntryId == ei.Id &&
                 img.ObjectKey == eif.File.ObjectKey &&
                 img.Type == newType, token);
@@ -97,7 +122,7 @@ public class EntryService
                     Type = newType,
                 };
 
-                _eventDbContext.EntryImages.Add(entryImage);
+                eventDbContext.EntryImages.Add(entryImage);
             }
         }
     }

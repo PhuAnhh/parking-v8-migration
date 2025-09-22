@@ -1,7 +1,9 @@
 using Microsoft.EntityFrameworkCore;
-using Application_v6.Configurations.v6;
-using Application_v6.Entities.v6;
-using File = Application_v6.Entities.v6.File;
+using Application_v6.Configurations.v6.Device;
+using Application_v6.Configurations.v6.Parking;
+using Application_v6.Entities.v6.Parking;
+using Application_v6.Entities.v6.Device;
+using File = Application_v6.Entities.v6.Parking.File;
 
 namespace Application_v6.DbContexts.v6;
 

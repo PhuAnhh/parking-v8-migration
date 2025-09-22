@@ -1,8 +1,8 @@
-using Application_v6.Entities.v6;
+using Application_v6.Entities.v6.Parking;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace Application_v6.Configurations.v6;
+namespace Application_v6.Configurations.v6.Parking;
 
 public class EventOutConfiguration : IEntityTypeConfiguration<EventOut>
 {

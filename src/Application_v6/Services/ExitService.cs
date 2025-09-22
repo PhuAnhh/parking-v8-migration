@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Application_v6.DbContexts.v6;
 using Application_v6.DbContexts.v8;
-using Application_v6.Entities.v6;
+using Application_v6.Entities.v6.Parking;
 using Application_v6.Entities.v8;
 using EFCore.BulkExtensions;
 
@@ -39,7 +39,6 @@ public class ExitService(ParkingDbContext parkingDbContext, EventDbContext event
         {
             var exits = await query
                 .Where(e => lastCreatedUtc == null || e.CreatedUtc > lastCreatedUtc)
-                
                 .OrderBy(e => e.CreatedUtc)
                 .Take(batchSize)
                 .ToListAsync(token);

@@ -55,9 +55,8 @@ public partial class Main : Form
             else if (selected == 4)
             {
                 var insertService = scope.ServiceProvider.GetRequiredService<DeviceService>();
-                await insertService.InsertDevice(fromDate, Log, token);
+                await insertService.InsertLane(fromDate, Log, token);
             }
-
             else if (selected == 5)
             {
                 var insertService = scope.ServiceProvider.GetRequiredService<EntryService>();
@@ -68,16 +67,13 @@ public partial class Main : Form
                 var insertService = scope.ServiceProvider.GetRequiredService<ExitService>();
                 await insertService.InsertExit(fromDate, Log, token);
             }
-            
             else if (selected == 7)
             {
                 // anh vaor
             }
             else if (selected == 8)
             {
-                
             }
-
             MessageBox.Show("Success", "✔ Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
         catch (OperationCanceledException)

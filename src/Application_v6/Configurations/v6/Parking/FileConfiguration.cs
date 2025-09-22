@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using File = Application_v6.Entities.v6.File;
+using File = Application_v6.Entities.v6.Parking.File;
 
-namespace Application_v6.Configurations.v6;
+namespace Application_v6.Configurations.v6.Parking;
 
 public class FileConfiguration : IEntityTypeConfiguration<File>
 {

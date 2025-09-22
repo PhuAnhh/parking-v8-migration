@@ -42,6 +42,9 @@ static class Program
                 .EnableDetailedErrors()
                 .EnableSensitiveDataLogging());
 
+        services.AddDbContext<DeviceDbContext>(opt =>
+            opt.UseSqlServer(config.GetConnectionString("Device")));
+
         services.AddDbContext<EventDbContext>(opt =>
             opt.UseNpgsql(config.GetConnectionString("Event")));
 

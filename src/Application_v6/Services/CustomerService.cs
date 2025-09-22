@@ -2,85 +2,106 @@ using Microsoft.EntityFrameworkCore;
 using Application_v6.DbContexts.v6;
 using Application_v6.DbContexts.v8;
 using Application_v6.Entities.v8;
+using EFCore.BulkExtensions;
 
 namespace Application_v6.Services;
 
-public class CustomerService
+public class CustomerService(
+    ParkingDbContext parkingDbContext,
+    EventDbContext eventDbContext,
+    ResourceDbContext resourceDbContext
+)
 {
-    private readonly ParkingDbContext _parkingDbContext;
-    private readonly EventDbContext _eventDbContext;
-    private readonly ResourceDbContext _resourceDbContext;
-
-    public CustomerService(ParkingDbContext parkingDbContext, EventDbContext eventDbContext,
-        ResourceDbContext resourceDbContext)
-    {
-        _parkingDbContext = parkingDbContext;
-        _eventDbContext = eventDbContext;
-        _resourceDbContext = resourceDbContext;
-    }
-
     public async Task InsertCustomer(DateTime fromDate, Action<string> log, CancellationToken token)
     {
-        int inserted = 0;
-        int skipped = 0;
+        int inserted = 0, skipped = 0;
+        int batchSize = 5000;
 
-        var customers = await _parkingDbContext.Customers
+        var query = parkingDbContext.Customers.AsNoTracking()
             .Where(c => !c.Deleted && c.CreatedUtc >= fromDate)
-            .ToListAsync();
+            .OrderBy(c => c.CreatedUtc);
 
-        foreach (var c in customers)
+        DateTime? lastCreatedUtc = null;
+
+        var resourceIds = new HashSet<Guid>(
+            await resourceDbContext.Customers.AsNoTracking().Select(c => c.Id).ToListAsync(token));
+
+        var eventIds = new HashSet<Guid>(
+            await eventDbContext.Customers.AsNoTracking().Select(c => c.Id).ToListAsync(token));
+
+        while (true)
         {
-            token.ThrowIfCancellationRequested();
+            var customers = await query
+                .Where(c => lastCreatedUtc == null || c.CreatedUtc > lastCreatedUtc)
+                .OrderBy(c => c.CreatedUtc)
+                .Take(batchSize)
+                .ToListAsync(token);
 
-            var existsResource = await _resourceDbContext.Customers.AnyAsync(c8 => c8.Id == c.Id);
-            var existsEvent = await _eventDbContext.Customers.AnyAsync(c8 => c8.Id == c.Id);
+            if (customers.Count == 0) break;
 
-            if (!existsResource && !existsEvent)
+            var newResourceCustomers = new List<Customer>();
+            var newEventCustomers = new List<Customer>();
+
+            foreach (var c in customers)
             {
-                var cResource = new Customer
+                token.ThrowIfCancellationRequested();
+
+                bool exists = resourceIds.Contains(c.Id) || eventIds.Contains(c.Id);
+
+                if (!exists)
                 {
-                    Id = c.Id,
-                    Name = c.Name,
-                    Code = c.Code,
-                    CollectionId = c.CustomerGroupId,
-                    Address = c.Address,
-                    PhoneNumber = c.PhoneNumber,
-                    Deleted = c.Deleted,
-                    CreatedUtc = c.CreatedUtc,
-                    UpdatedUtc = c.UpdatedUtc,
-                };
+                    var entity = new Customer
+                    {
+                        Id = c.Id,
+                        Name = c.Name,
+                        Code = c.Code,
+                        CollectionId = c.CustomerGroupId,
+                        Address = c.Address,
+                        PhoneNumber = c.PhoneNumber,
+                        Deleted = c.Deleted,
+                        CreatedUtc = c.CreatedUtc,
+                        UpdatedUtc = c.UpdatedUtc,
+                    };
 
-                var cEvent = new Customer
+                    newResourceCustomers.Add(entity);
+                    newEventCustomers.Add(new Customer
+                    {
+                        Id = entity.Id,
+                        Name = entity.Name,
+                        Code = entity.Code,
+                        CollectionId = entity.CollectionId,
+                        Address = entity.Address,
+                        PhoneNumber = entity.PhoneNumber,
+                        Deleted = entity.Deleted,
+                        CreatedUtc = entity.CreatedUtc,
+                        UpdatedUtc = entity.UpdatedUtc,
+                    });
+
+                    resourceIds.Add(c.Id);
+                    eventIds.Add(c.Id);
+
+                    inserted++;
+                    log($"[INSERTED] {c.Id} - {c.Name}");
+                }
+                else
                 {
-                    Id = c.Id,
-                    Name = c.Name,
-                    Code = c.Code,
-                    CollectionId = c.CustomerGroupId,
-                    Address = c.Address,
-                    PhoneNumber = c.PhoneNumber,
-                    Deleted = c.Deleted,
-                    CreatedUtc = c.CreatedUtc,
-                    UpdatedUtc = c.UpdatedUtc,
-                };
-
-                _resourceDbContext.Customers.Add(cResource);
-                _eventDbContext.Customers.Add(cEvent);
-
-                await _resourceDbContext.SaveChangesAsync(token);
-                await _eventDbContext.SaveChangesAsync(token);
-
-                inserted++;
-                log($"[INSERTED] {c.Id} - {c.Name}");
+                    skipped++;
+                    log($"[SKIPPED] {c.Id} - {c.Name}");
+                }
             }
-            else
-            {
-                skipped++;
-                log($"[SKIPPED] {c.Id} - {c.Name}");
-            }
+
+            if (newResourceCustomers.Any())
+                await resourceDbContext.BulkInsertAsync(newResourceCustomers, cancellationToken: token);
+
+            if (newEventCustomers.Any())
+                await eventDbContext.BulkInsertAsync(newEventCustomers, cancellationToken: token);
+
+            lastCreatedUtc = customers.Last().CreatedUtc;
+
+            log($"Đã xử lý tổng cộng: {inserted + skipped}");
         }
 
         log("========== KẾT QUẢ ==========");
-        log($"Tổng: {customers.Count}");
         log($"Thành công: {inserted}");
         log($"Tồn tại: {skipped}");
     }

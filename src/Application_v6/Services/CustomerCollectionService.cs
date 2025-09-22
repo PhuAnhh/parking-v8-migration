@@ -3,80 +3,103 @@ using Application_v6.DbContexts.v6;
 using Application_v6.DbContexts.v8;
 using Application_v6.Entities.v8.Event;
 using Application_v6.Entities.v8.Resource;
+using EFCore.BulkExtensions;
 
 namespace Application_v6.Services;
 
-public class CustomerCollectionService
+public class CustomerCollectionService(
+    ParkingDbContext parkingDbContext,
+    EventDbContext eventDbContext,
+    ResourceDbContext resourceDbContext
+)
 {
-    private readonly ParkingDbContext _parkingDbContext;
-    private readonly EventDbContext _eventDbContext;
-    private readonly ResourceDbContext _resourceDbContext;
-
-    public CustomerCollectionService(ParkingDbContext parkingDbContext, EventDbContext eventDbContext,
-        ResourceDbContext resourceDbContext)
-    {
-        _parkingDbContext = parkingDbContext;
-        _eventDbContext = eventDbContext;
-        _resourceDbContext = resourceDbContext;
-    }
-
     public async Task InsertCustomerCollection(DateTime fromDate, Action<string> log, CancellationToken token)
     {
-        int inserted = 0;
-        int skipped = 0;
+        int inserted = 0, skipped = 0;
+        int batchSize = 5000;
 
-        var customerCollections = await _parkingDbContext.CustomerGroups
+        var query = parkingDbContext.CustomerGroups.AsNoTracking()
             .Where(cg => !cg.Deleted && cg.CreatedUtc >= fromDate)
-            .ToListAsync();
+            .OrderBy(cg => cg.CreatedUtc);
 
-        foreach (var cg in customerCollections)
+        DateTime? lastCreatedUtc = null;
+
+        var resourceIds = new HashSet<Guid>(
+            await resourceDbContext.CustomerCollections.AsNoTracking().Select(cc => cc.Id).ToListAsync(token));
+
+        var eventIds = new HashSet<Guid>(
+            await eventDbContext.CustomerCollections.AsNoTracking().Select(cc => cc.Id).ToListAsync(token));
+
+        while (true)
         {
-            token.ThrowIfCancellationRequested();
+            var cgroups = await query
+                .Where(cg => lastCreatedUtc == null || cg.CreatedUtc > lastCreatedUtc)
+                .OrderBy(cg => cg.CreatedUtc)
+                .Take(batchSize)
+                .ToListAsync(token);
 
-            var existsResource = await _resourceDbContext.CustomerCollections.AnyAsync(cc => cc.Id == cg.Id);
-            var existsEvent = await _eventDbContext.CustomerCollections.AnyAsync(cc => cc.Id == cg.Id);
+            if (cgroups.Count == 0) break;
 
-            if (!existsResource && !existsEvent)
+            var newResourceCollections = new List<ResourceCustomerCollection>();
+            var newEventCollections = new List<EventCustomerCollection>();
+
+            foreach (var cg in cgroups)
             {
-                var cCResource = new ResourceCustomerCollection
+                token.ThrowIfCancellationRequested();
+
+                bool exists = resourceIds.Contains(cg.Id) || eventIds.Contains(cg.Id);
+
+                if (!exists)
                 {
-                    Id = cg.Id,
-                    Name = cg.Name,
-                    Code = cg.Code,
-                    ParentId = cg.ParentId,
-                    Deleted = cg.Deleted,
-                    CreatedUtc = cg.CreatedUtc,
-                    UpdatedUtc = cg.UpdatedUtc,
-                };
+                    var cCResource = new ResourceCustomerCollection
+                    {
+                        Id = cg.Id,
+                        Name = cg.Name,
+                        Code = cg.Code,
+                        ParentId = cg.ParentId,
+                        Deleted = cg.Deleted,
+                        CreatedUtc = cg.CreatedUtc,
+                        UpdatedUtc = cg.UpdatedUtc,
+                    };
 
-                var cCEvent = new EventCustomerCollection
+                    var cCEvent = new EventCustomerCollection
+                    {
+                        Id = cg.Id,
+                        Name = cg.Name,
+                        Code = cg.Code,
+                        Deleted = cg.Deleted,
+                        CreatedUtc = cg.CreatedUtc,
+                        UpdatedUtc = cg.UpdatedUtc,
+                    };
+
+                    newResourceCollections.Add(cCResource);
+                    newEventCollections.Add(cCEvent);
+
+                    resourceIds.Add(cg.Id);
+                    eventIds.Add(cg.Id);
+
+                    inserted++;
+                    log($"[INSERTED] {cg.Id} - {cg.Name}");
+                }
+                else
                 {
-                    Id = cg.Id,
-                    Name = cg.Name,
-                    Code = cg.Code,
-                    Deleted = cg.Deleted,
-                    CreatedUtc = cg.CreatedUtc,
-                    UpdatedUtc = cg.UpdatedUtc,
-                };
-
-                _resourceDbContext.CustomerCollections.Add(cCResource);
-                _eventDbContext.CustomerCollections.Add(cCEvent);
-
-                await _resourceDbContext.SaveChangesAsync(token);
-                await _eventDbContext.SaveChangesAsync(token);
-
-                inserted++;
-                log($"[INSERTED] {cg.Id} - {cg.Name}");
+                    skipped++;
+                    log($"[SKIPPED] {cg.Id} - {cg.Name}");
+                }
             }
-            else
-            {
-                skipped++;
-                log($"[SKIPPED] {cg.Id} - {cg.Name}");
-            }
+
+            if (newResourceCollections.Any())
+                await resourceDbContext.BulkInsertAsync(newResourceCollections, cancellationToken: token);
+
+            if (newEventCollections.Any())
+                await eventDbContext.BulkInsertAsync(newEventCollections, cancellationToken: token);
+
+            lastCreatedUtc = cgroups.Last().CreatedUtc;
+
+            log($"Đã xử lý tổng cộng: {inserted + skipped}");
         }
 
         log("========== KẾT QUẢ ==========");
-        log($"Tổng: {customerCollections.Count}");
         log($"Thành công: {inserted}");
         log($"Tồn tại: {skipped}");
     }

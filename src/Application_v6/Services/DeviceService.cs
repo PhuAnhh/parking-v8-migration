@@ -2,71 +2,104 @@ using Microsoft.EntityFrameworkCore;
 using Application_v6.DbContexts.v6;
 using Application_v6.DbContexts.v8;
 using Application_v6.Entities.v8;
+using EFCore.BulkExtensions;
 
 namespace Application_v6.Services;
 
-public class DeviceService
+public class DeviceService(
+    ParkingDbContext parkingDbContext,
+    EventDbContext eventDbContext,
+    ResourceDbContext resourceDbContext
+)
 {
-    private readonly ParkingDbContext _parkingDbContext;
-    private readonly EventDbContext _eventDbContext;
-    private readonly ResourceDbContext _resourceDbContext;
-
-    public DeviceService(ParkingDbContext parkingDbContext, EventDbContext eventDbContext,
-        ResourceDbContext resourceDbContext)
+    public async Task InsertLane(DateTime fromDate, Action<string> log, CancellationToken token)
     {
-        _parkingDbContext = parkingDbContext;
-        _eventDbContext = eventDbContext;
-        _resourceDbContext = resourceDbContext;
-    }
+        int inserted = 0, skipped = 0;
+        int batchSize = 5000;
 
-    public async Task InsertDevice(DateTime fromDate, Action<string> log, CancellationToken token)
-    {
-        int inserted = 0;
-        int skipped = 0;
-
-        var lanes = await _parkingDbContext.Lanes
+        var query = parkingDbContext.Lanes.AsNoTracking()
             .Where(c => !c.Deleted && c.CreatedUtc >= fromDate)
-            .ToListAsync();
+            .OrderBy(c => c.CreatedUtc);
 
-        foreach (var l in lanes)
+        DateTime? lastCreatedUtc = null;
+
+        var resourceIds = new HashSet<Guid>(
+            await resourceDbContext.Devices.AsNoTracking().Select(d => d.Id).ToListAsync(token));
+
+        var eventIds = new HashSet<Guid>(
+            await eventDbContext.Devices.AsNoTracking().Select(d => d.Id).ToListAsync(token));
+
+        while (true)
         {
-            token.ThrowIfCancellationRequested();
+            var lanes = await query
+                .Where(c => lastCreatedUtc == null || c.CreatedUtc > lastCreatedUtc)
+                .OrderBy(c => c.CreatedUtc)
+                .Take(batchSize)
+                .ToListAsync(token);
 
-            var existsResource = await _resourceDbContext.Devices.AnyAsync(d => d.Id == l.Id);
-            var existsEvent = await _eventDbContext.Devices.AnyAsync(d => d.Id == l.Id);
+            if (lanes.Count == 0) break;
 
-            if (!existsResource && !existsEvent)
+            var newResourceDevices = new List<Device>();
+            var newEventDevices = new List<Device>();
+
+            foreach (var l in lanes)
             {
-                var device = new Device
+                token.ThrowIfCancellationRequested();
+
+                bool exists = resourceIds.Contains(l.Id) || eventIds.Contains(l.Id);
+
+                if (!exists)
                 {
-                    Id = l.Id,
-                    Name = l.Name,
-                    Code = l.Code,
-                    Type = "LANE",
-                    Enabled = l.Enabled,
-                    Deleted = l.Deleted,
-                    CreatedUtc = l.CreatedUtc,
-                    UpdatedUtc = l.UpdatedUtc,
-                };
+                    var device = new Device
+                    {
+                        Id = l.Id,
+                        Name = l.Name,
+                        Code = l.Code,
+                        Type = "LANE",
+                        Enabled = l.Enabled,
+                        Deleted = l.Deleted,
+                        CreatedUtc = l.CreatedUtc,
+                        UpdatedUtc = l.UpdatedUtc,
+                    };
 
-                _resourceDbContext.Devices.Add(device);
-                _eventDbContext.Devices.Add(device);
+                    newResourceDevices.Add(device);
+                    newEventDevices.Add(new Device
+                    {
+                        Id = device.Id,
+                        Name = device.Name,
+                        Code = device.Code,
+                        Type = device.Type,
+                        Enabled = device.Enabled,
+                        Deleted = device.Deleted,
+                        CreatedUtc = device.CreatedUtc,
+                        UpdatedUtc = device.UpdatedUtc,
+                    });
 
-                await _resourceDbContext.SaveChangesAsync(token);
-                await _eventDbContext.SaveChangesAsync(token);
+                    resourceIds.Add(device.Id);
+                    eventIds.Add(device.Id);
 
-                inserted++;
-                log($"[INSERTED] {l.Id} - {l.Name}");
+                    inserted++;
+                    log($"[INSERTED] {l.Id} - {l.Name}");
+                }
+                else
+                {
+                    skipped++;
+                    log($"[SKIPPED] {l.Id} - {l.Name}");
+                }
             }
-            else
-            {
-                skipped++;
-                log($"[SKIPPED] {l.Id} - {l.Name}");
-            }
+
+            if (newResourceDevices.Any())
+                await resourceDbContext.BulkInsertAsync(newResourceDevices, cancellationToken: token);
+
+            if (newEventDevices.Any())
+                await eventDbContext.BulkInsertAsync(newEventDevices, cancellationToken: token);
+
+            lastCreatedUtc = lanes.Last().CreatedUtc;
+
+            log($"Đã xử lý tổng cộng: {inserted + skipped}");
         }
 
         log("========== KẾT QUẢ ==========");
-        log($"Tổng: {lanes.Count}");
         log($"Thành công: {inserted}");
         log($"Tồn tại: {skipped}");
     }

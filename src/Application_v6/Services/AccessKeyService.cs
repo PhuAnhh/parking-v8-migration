@@ -2,45 +2,62 @@ using Microsoft.EntityFrameworkCore;
 using Application_v6.DbContexts.v6;
 using Application_v6.DbContexts.v8;
 using Application_v6.Entities.v8;
+using EFCore.BulkExtensions;
 
 namespace Application_v6.Services;
 
-public class AccessKeyService
+public class AccessKeyService(
+    ParkingDbContext parkingDbContext,
+    EventDbContext eventDbContext,
+    ResourceDbContext resourceDbContext
+)
 {
-    private readonly ParkingDbContext _parkingDbContext;
-    private readonly EventDbContext _eventDbContext;
-    private readonly ResourceDbContext _resourceDbContext;
-
-    public AccessKeyService(ParkingDbContext parkingDbContext, EventDbContext eventDbContext,
-        ResourceDbContext resourceDbContext)
-    {
-        _parkingDbContext = parkingDbContext;
-        _eventDbContext = eventDbContext;
-        _resourceDbContext = resourceDbContext;
-    }
-
     public async Task InsertAccessKey(DateTime fromDate, Action<string> log, CancellationToken token)
     {
-        int inserted = 0;
-        int skipped = 0;
+        int inserted = 0, skipped = 0;
+        var batchSize = 5000;
 
-        var identites = await _parkingDbContext.Identites
+        var existingEventAKeys = new HashSet<Guid>(
+            await eventDbContext.AccessKeys.AsNoTracking().Select(x => x.Id).ToListAsync(token));
+        var existingResourceAKeys = new HashSet<Guid>(
+            await resourceDbContext.AccessKeys.AsNoTracking().Select(x => x.Id).ToListAsync(token));
+        var existingCustomers = new HashSet<Guid>(
+            await eventDbContext.Customers.AsNoTracking().Select(c => c.Id).ToListAsync(token));
+
+        var identitiesQuery = parkingDbContext.Identites
             .Where(i => !i.Deleted && i.CreatedUtc >= fromDate)
-            .ToListAsync(token);
+            .OrderBy(i => i.CreatedUtc);
 
-        var vehicles = await _parkingDbContext.Vehicles
+        var vehiclesQuery = parkingDbContext.Vehicles
             .Where(v => !v.Deleted && v.CreatedUtc >= fromDate)
-            .ToListAsync(token);
+            .OrderBy(v => v.CreatedUtc);
 
-        foreach (var i in identites)
+        DateTime? lastIdentityCreated = null;
+        DateTime? lastVehicleCreated = null;
+
+        //Identity
+        while (true)
         {
-            token.ThrowIfCancellationRequested();
+            var identities = await identitiesQuery
+                .Where(i => lastIdentityCreated == null || i.CreatedUtc > lastIdentityCreated)
+                .Take(batchSize)
+                .ToListAsync(token);
 
-            var existsResource = await _resourceDbContext.AccessKeys.AnyAsync(ak => ak.Id == i.Id);
-            var existsEvent = await _eventDbContext.AccessKeys.AnyAsync(ak => ak.Id == i.Id);
+            if (!identities.Any()) break;
 
-            if (!existsResource && !existsEvent)
+            var newAccessKeys = new List<AccessKey>();
+
+            foreach (var i in identities)
             {
+                token.ThrowIfCancellationRequested();
+
+                if (existingEventAKeys.Contains(i.Id) || existingResourceAKeys.Contains(i.Id))
+                {
+                    skipped++;
+                    log($"[SKIPPED - IDENTITY] {i.Id} - {i.Name}");
+                    continue;
+                }
+
                 var accessKey = new AccessKey
                 {
                     Id = i.Id,
@@ -59,36 +76,50 @@ public class AccessKeyService
                     UpdatedUtc = i.UpdatedUtc,
                 };
 
-                _resourceDbContext.AccessKeys.Add(accessKey);
-                _eventDbContext.AccessKeys.Add(accessKey);
-
-                await _resourceDbContext.SaveChangesAsync(token);
-                await _eventDbContext.SaveChangesAsync(token);
+                newAccessKeys.Add(accessKey);
+                existingEventAKeys.Add(i.Id);
+                existingResourceAKeys.Add(i.Id);
 
                 inserted++;
-                log($"[INSERTED] {i.Id} - {i.Name}");
+                log($"[INSERTED - IDENTITY] {i.Id} - {i.Name}");
             }
-            else
+
+            if (newAccessKeys.Any())
             {
-                skipped++;
-                log($"[SKIPPED] {i.Id} - {i.Name}");
+                await eventDbContext.BulkInsertAsync(newAccessKeys, cancellationToken: token);
+                await resourceDbContext.BulkInsertAsync(newAccessKeys, cancellationToken: token);
             }
+
+            lastIdentityCreated = identities.Last().CreatedUtc;
         }
 
-        foreach (var v in vehicles)
+        //Vehicle
+        while (true)
         {
-            token.ThrowIfCancellationRequested();
+            var vehicles = await vehiclesQuery
+                .Where(v => lastVehicleCreated == null || v.CreatedUtc > lastVehicleCreated)
+                .Take(batchSize)
+                .ToListAsync(token);
 
-            var existsResource = await _resourceDbContext.AccessKeys.AnyAsync(ak => ak.Id == v.Id, token);
-            var existsEvent = await _eventDbContext.AccessKeys.AnyAsync(ak => ak.Id == v.Id, token);
+            if (!vehicles.Any()) break;
 
-            var existsCustomer = await _eventDbContext.Customers.AnyAsync(c => c.Id == v.CustomerId, token);
+            var newAccessKeys = new List<AccessKey>();
+            var newMetrics = new List<AccessKeyMetric>();
 
-            if (!existsResource && !existsEvent)
+            foreach (var v in vehicles)
             {
-                var collectionId = await _parkingDbContext.VehicleIdentities
+                token.ThrowIfCancellationRequested();
+
+                if (existingEventAKeys.Contains(v.Id) || existingResourceAKeys.Contains(v.Id))
+                {
+                    skipped++;
+                    log($"[SKIPPED - VEHICLE] {v.Id} - {v.PlateNumber}");
+                    continue;
+                }
+
+                var collectionId = await parkingDbContext.VehicleIdentities
                     .Where(vi => vi.VehicleId == v.Id)
-                    .Join(_parkingDbContext.Identites,
+                    .Join(parkingDbContext.Identites,
                         vi => vi.IdentityId,
                         i => i.Id,
                         (vi, i) => i.IdentityGroupId)
@@ -102,24 +133,22 @@ public class AccessKeyService
                     Code = v.PlateNumber,
                     Type = "VEHICLE",
                     CollectionId = collectionId,
-                    CustomerId = existsCustomer ? v.CustomerId : null,
-                    ExpiredUtc = v.ExpireUtc ?? DateTime.UtcNow,
+                    CustomerId = existingCustomers.Contains(v.CustomerId) ? v.CustomerId : null,
+                    ExpiredUtc = v.ExpireUtc,
                     Status = "IN_USE",
                     Deleted = v.Deleted,
                     CreatedUtc = v.CreatedUtc,
                     UpdatedUtc = v.UpdatedUtc
                 };
 
-                _resourceDbContext.AccessKeys.Add(ak);
-                _eventDbContext.AccessKeys.Add(ak);
-
-                await _resourceDbContext.SaveChangesAsync(token);
-                await _eventDbContext.SaveChangesAsync(token);
+                newAccessKeys.Add(ak);
+                existingEventAKeys.Add(v.Id);
+                existingResourceAKeys.Add(v.Id);
 
                 inserted++;
-                log($"[INSERTED] {v.Id} - {v.PlateNumber} (Vehicle)");
+                log($"[INSERTED - VEHICLE] {v.Id} - {v.PlateNumber}");
 
-                var relatedIdentities = await _parkingDbContext.VehicleIdentities
+                var relatedIdentities = await parkingDbContext.VehicleIdentities
                     .Where(vi => vi.VehicleId == v.Id)
                     .ToListAsync(token);
 
@@ -130,23 +159,26 @@ public class AccessKeyService
                         AccessKeyId = v.Id,
                         RelatedAccessKeyId = vi.IdentityId
                     };
-
-                    _resourceDbContext.AccessKeyMetrics.Add(metric);
-                    _eventDbContext.AccessKeyMetrics.Add(metric);
+                    newMetrics.Add(metric);
                 }
+            }
 
-                await _resourceDbContext.SaveChangesAsync(token);
-                await _eventDbContext.SaveChangesAsync(token);
-            }
-            else
+            if (newAccessKeys.Any())
             {
-                skipped++;
-                log($"[SKIPPED] {v.Id} - {v.PlateNumber} (Vehicle)");
+                await eventDbContext.BulkInsertAsync(newAccessKeys, cancellationToken: token);
+                await resourceDbContext.BulkInsertAsync(newAccessKeys, cancellationToken: token);
             }
+
+            if (newMetrics.Any())
+            {
+                await eventDbContext.BulkInsertAsync(newMetrics, cancellationToken: token);
+                await resourceDbContext.BulkInsertAsync(newMetrics, cancellationToken: token);
+            }
+
+            lastVehicleCreated = vehicles.Last().CreatedUtc;
         }
 
         log("========== KẾT QUẢ ==========");
-        log($"Tổng: [Định danh] - {identites.Count}, [Phương tiện] - {vehicles.Count}");
         log($"Thành công: {inserted}");
         log($"Tồn tại: {skipped}");
     }
