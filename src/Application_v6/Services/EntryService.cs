@@ -9,13 +9,13 @@ namespace Application_v6.Services;
 
 public class EntryService(ParkingDbContext parkingDbContext, EventDbContext eventDbContext)
 {
-    public async Task InsertEntry(DateTime fromDate, Action<string> log, CancellationToken token)
+    public async Task InsertEntry(Action<string> log, CancellationToken token)
     {
         var batchSize = 5000;
         int inserted = 0, skipped = 0;
 
         var query = parkingDbContext.EventIns.AsNoTracking()
-            .Where(e => !e.Deleted && e.CreatedUtc >= fromDate && e.Status == "Parking")
+            .Where(e => !e.Deleted && e.Status == "Parking")
             .OrderBy(e => e.CreatedUtc)
             .Include(e => e.EventInFiles)
             .ThenInclude(eif => eif.File);

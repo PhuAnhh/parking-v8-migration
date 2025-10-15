@@ -12,13 +12,13 @@ public class AccessKeyCollectionService(
     ResourceDbContext resourceDbContext
 )
 {
-    public async Task InsertAccessKeyCollection(DateTime fromDate, Action<string> log, CancellationToken token)
+    public async Task InsertAccessKeyCollection(Action<string> log, CancellationToken token)
     {
         int inserted = 0, skipped = 0;
         int batchSize = 5000;
 
         var query = parkingDbContext.IdentityGroups.AsNoTracking()
-            .Where(ig => !ig.Deleted && ig.CreatedUtc >= fromDate)
+            .Where(ig => !ig.Deleted)
             .OrderBy(ig => ig.CreatedUtc);
 
         DateTime? lastCreatedUtc = null;

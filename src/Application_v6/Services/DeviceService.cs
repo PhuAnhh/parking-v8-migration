@@ -13,13 +13,13 @@ public class DeviceService(
     ResourceDbContext resourceDbContext
 )
 {
-    public async Task InsertGate(DateTime fromDate, Action<string> log, CancellationToken token)
+    public async Task InsertGate(Action<string> log, CancellationToken token)
     {
         int inserted = 0, skipped = 0;
         int batchSize = 5000;
 
         var query = deviceDbContext.Gates.AsNoTracking()
-            .Where(g => !g.Deleted && g.CreatedUtc >= fromDate)
+            .Where(g => !g.Deleted)
             .OrderBy(g => g.CreatedUtc);
 
         DateTime? lastCreatedUtc = null;
@@ -105,13 +105,13 @@ public class DeviceService(
         log($"Tồn tại: {skipped}");
     }
     
-    public async Task InsertComputer(DateTime fromDate, Action<string> log, CancellationToken token)
+    public async Task InsertComputer(Action<string> log, CancellationToken token)
     {
         int inserted = 0, skipped = 0;
         int batchSize = 5000;
 
         var query = deviceDbContext.Computers.AsNoTracking()
-            .Where(c => !c.Deleted && c.CreatedUtc >= fromDate)
+            .Where(c => !c.Deleted)
             .OrderBy(c => c.CreatedUtc);
 
         DateTime? lastCreatedUtc = null;
@@ -196,13 +196,13 @@ public class DeviceService(
         log($"Tồn tại: {skipped}");
     }
     
-    public async Task InsertCamera(DateTime fromDate, Action<string> log, CancellationToken token)
+    public async Task InsertCamera(Action<string> log, CancellationToken token)
     {
         int inserted = 0, skipped = 0;
         int batchSize = 5000;
 
         var query = deviceDbContext.Cameras.AsNoTracking()
-            .Where(c => !c.Deleted && c.CreatedUtc >= fromDate)
+            .Where(c => !c.Deleted)
             .OrderBy(c => c.CreatedUtc);
 
         DateTime? lastCreatedUtc = null;
@@ -288,13 +288,13 @@ public class DeviceService(
         log($"Tồn tại: {skipped}");
     }
     
-    public async Task InsertControlUnit(DateTime fromDate, Action<string> log, CancellationToken token)
+    public async Task InsertControlUnit(Action<string> log, CancellationToken token)
     {
         int inserted = 0, skipped = 0;
         int batchSize = 5000;
 
         var query = deviceDbContext.ControlUnits.AsNoTracking()
-            .Where(cu => !cu.Deleted && cu.CreatedUtc >= fromDate)
+            .Where(cu => !cu.Deleted)
             .OrderBy(cu => cu.CreatedUtc);
 
         DateTime? lastCreatedUtc = null;
@@ -472,13 +472,13 @@ public class DeviceService(
         log($"Tồn tại: {skipped}");
     }
     
-    public async Task InsertLed(DateTime fromDate, Action<string> log, CancellationToken token)
+    public async Task InsertLed(Action<string> log, CancellationToken token)
     {
         int inserted = 0, skipped = 0;
         int batchSize = 5000;
 
         var query = deviceDbContext.Leds.AsNoTracking()
-            .Where(l => !l.Deleted && l.CreatedUtc >= fromDate)
+            .Where(l => !l.Deleted)
             .OrderBy(l => l.CreatedUtc);
 
         DateTime? lastCreatedUtc = null;

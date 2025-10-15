@@ -29,14 +29,11 @@ partial class Main
     /// </summary>
     private void InitializeComponent()
     {
-        components = new System.ComponentModel.Container();
         System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Main));
         cmb = new System.Windows.Forms.ComboBox();
-        dtp = new System.Windows.Forms.DateTimePicker();
         btnStart = new System.Windows.Forms.Button();
         btnStop = new System.Windows.Forms.Button();
         txtLog = new System.Windows.Forms.TextBox();
-        tipDateTime = new System.Windows.Forms.ToolTip(components);
         SuspendLayout();
         // 
         // cmb
@@ -46,22 +43,9 @@ partial class Main
         cmb.Items.AddRange(new object[] { "👥 Nhóm khách hàng", "👤 Khách hàng", "🆔 Nhóm định danh", "🔑 Định danh", "🚪 Cổng", "💻 Máy tính", "📷 Camera", "🎛️ Bộ điều khiển", "🚦 Làn", "💡 Led", "🚗 Xe trong bãi", "🏎️ Xe đã ra" });
         cmb.Location = new System.Drawing.Point(23, 27);
         cmb.Name = "cmb";
-        cmb.Size = new System.Drawing.Size(262, 32);
+        cmb.Size = new System.Drawing.Size(749, 32);
         cmb.TabIndex = 0;
         cmb.SelectedIndex = 0;
-        // 
-        // dtp
-        // 
-        dtp.Cursor = System.Windows.Forms.Cursors.Hand;
-        dtp.CustomFormat = "dd-MM-yyyy HH:mm:ss";
-        dtp.DropDownAlign = System.Windows.Forms.LeftRightAlignment.Right;
-        dtp.Font = new System.Drawing.Font("Cascadia Mono Light", 10.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)0));
-        dtp.Format = System.Windows.Forms.DateTimePickerFormat.Custom;
-        dtp.Location = new System.Drawing.Point(304, 31);
-        dtp.Name = "dtp";
-        dtp.Size = new System.Drawing.Size(468, 28);
-        dtp.TabIndex = 1;
-        tipDateTime.SetToolTip(dtp, "Giờ UTC");
         // 
         // btnStart
         // 
@@ -107,7 +91,6 @@ partial class Main
         Controls.Add(txtLog);
         Controls.Add(btnStop);
         Controls.Add(btnStart);
-        Controls.Add(dtp);
         Controls.Add(cmb);
         Icon = ((System.Drawing.Icon)resources.GetObject("$this.Icon"));
         StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
@@ -116,15 +99,9 @@ partial class Main
         PerformLayout();
     }
 
-    private System.Windows.Forms.ToolTip tipDateTime;
-
     private System.Windows.Forms.TextBox txtLog;
-
     private System.Windows.Forms.Button btnStart;
     private System.Windows.Forms.Button btnStop;
-
-    private System.Windows.Forms.DateTimePicker dtp;
-
     private System.Windows.Forms.ComboBox cmb;
 
     #endregion

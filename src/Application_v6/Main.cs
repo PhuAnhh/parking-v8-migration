@@ -29,48 +29,47 @@ public partial class Main : Form
         try
         {
             using var scope = _serviceProvider.CreateScope();
-            DateTime fromDate = dtp.Value;
             var selected = cmb.SelectedIndex;
 
             if (selected == 0)
             {
                 var insertService = scope.ServiceProvider.GetRequiredService<CustomerCollectionService>();
-                await insertService.InsertCustomerCollection(fromDate, Log, token);
+                await insertService.InsertCustomerCollection(Log, token);
             }
             else if (selected == 1)
             {
                 var insertService = scope.ServiceProvider.GetRequiredService<CustomerService>();
-                await insertService.InsertCustomer(fromDate, Log, token);
+                await insertService.InsertCustomer(Log, token);
             }
             else if (selected == 2)
             {
                 var insertService = scope.ServiceProvider.GetRequiredService<AccessKeyCollectionService>();
-                await insertService.InsertAccessKeyCollection(fromDate, Log, token);
+                await insertService.InsertAccessKeyCollection(Log, token);
             }
             else if (selected == 3)
             {
                 var insertService = scope.ServiceProvider.GetRequiredService<AccessKeyService>();
-                await insertService.InsertAccessKey(fromDate, Log, token);
+                await insertService.InsertAccessKey(Log, token);
             }
             else if (selected == 4)
             {
                 var insertService = scope.ServiceProvider.GetRequiredService<DeviceService>();
-                await insertService.InsertGate(fromDate, Log, token);
+                await insertService.InsertGate(Log, token);
             }
             else if (selected == 5)
             {
                 var insertService = scope.ServiceProvider.GetRequiredService<DeviceService>();
-                await insertService.InsertComputer(fromDate, Log, token);
+                await insertService.InsertComputer(Log, token);
             }
             else if (selected == 6)
             {
                 var insertService = scope.ServiceProvider.GetRequiredService<DeviceService>();
-                await insertService.InsertCamera(fromDate, Log, token);
+                await insertService.InsertCamera(Log, token);
             }
             else if (selected == 7)
             {
                 var insertService = scope.ServiceProvider.GetRequiredService<DeviceService>();
-                await insertService.InsertControlUnit(fromDate, Log, token);
+                await insertService.InsertControlUnit(Log, token);
             }
             else if (selected == 8)
             {
@@ -80,17 +79,17 @@ public partial class Main : Form
             else if (selected == 9)
             {
                 var insertService = scope.ServiceProvider.GetRequiredService<DeviceService>();
-                await insertService.InsertLed(fromDate, Log, token);
+                await insertService.InsertLed(Log, token);
             }
             else if (selected == 10)
             {
                 var insertService = scope.ServiceProvider.GetRequiredService<EntryService>();
-                await insertService.InsertEntry(fromDate, Log, token);
+                await insertService.InsertEntry(Log, token);
             }
             else if (selected == 11)
             {
                 var insertService = scope.ServiceProvider.GetRequiredService<ExitService>();
-                await insertService.InsertExit(fromDate, Log, token);
+                await insertService.InsertExit(Log, token);
             }
             MessageBox.Show("Success", "✔ Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }

@@ -12,7 +12,7 @@ public class AccessKeyService(
     ResourceDbContext resourceDbContext
 )
 {
-    public async Task InsertAccessKey(DateTime fromDate, Action<string> log, CancellationToken token)
+    public async Task InsertAccessKey(Action<string> log, CancellationToken token)
     {
         int inserted = 0, skipped = 0;
         var batchSize = 5000;
@@ -25,11 +25,11 @@ public class AccessKeyService(
             await eventDbContext.Customers.AsNoTracking().Select(c => c.Id).ToListAsync(token));
 
         var identitiesQuery = parkingDbContext.Identites
-            .Where(i => !i.Deleted && i.CreatedUtc >= fromDate)
+            .Where(i => !i.Deleted)
             .OrderBy(i => i.CreatedUtc);
 
         var vehiclesQuery = parkingDbContext.Vehicles
-            .Where(v => !v.Deleted && v.CreatedUtc >= fromDate)
+            .Where(v => !v.Deleted)
             .OrderBy(v => v.CreatedUtc);
 
         DateTime? lastIdentityCreated = null;

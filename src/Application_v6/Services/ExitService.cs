@@ -9,13 +9,13 @@ namespace Application_v6.Services;
 
 public class ExitService(ParkingDbContext parkingDbContext, EventDbContext eventDbContext)
 {
-    public async Task InsertExit(DateTime fromDate, Action<string> log, CancellationToken token)
+    public async Task InsertExit(Action<string> log, CancellationToken token)
     {
         var batchSize = 5000;
         int inserted = 0, skipped = 0;
 
         var query = parkingDbContext.EventOuts.AsNoTracking()
-            .Where(e => !e.Deleted && e.CreatedUtc >= fromDate)
+            .Where(e => !e.Deleted)
             .OrderBy(e => e.CreatedUtc)
             .Include(e => e.EventOutFiles)
             .ThenInclude(eif => eif.File);

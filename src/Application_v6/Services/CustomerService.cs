@@ -12,13 +12,13 @@ public class CustomerService(
     ResourceDbContext resourceDbContext
 )
 {
-    public async Task InsertCustomer(DateTime fromDate, Action<string> log, CancellationToken token)
+    public async Task InsertCustomer(Action<string> log, CancellationToken token)
     {
         int inserted = 0, skipped = 0;
         int batchSize = 5000;
 
         var query = parkingDbContext.Customers.AsNoTracking()
-            .Where(c => !c.Deleted && c.CreatedUtc >= fromDate)
+            .Where(c => !c.Deleted)
             .OrderBy(c => c.CreatedUtc);
 
         DateTime? lastCreatedUtc = null;
