@@ -75,7 +75,7 @@ public partial class Main : Form
             else if (selected == 8)
             {
                 var insertService = scope.ServiceProvider.GetRequiredService<DeviceService>();
-                await insertService.InsertLane(fromDate, Log, token);
+                await insertService.InsertLane(Log, token);
             }
             else if (selected == 9)
             {

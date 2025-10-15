@@ -22,7 +22,6 @@ public class ExitService(ParkingDbContext parkingDbContext, EventDbContext event
 
         DateTime? lastCreatedUtc = null;
 
-// load trước id để tránh AnyAsync lặp nhiều lần
         var existingExits = new HashSet<Guid>(
             await eventDbContext.Exits.AsNoTracking().Select(e => e.Id).ToListAsync(token));
 
@@ -47,6 +46,8 @@ public class ExitService(ParkingDbContext parkingDbContext, EventDbContext event
 
             var newEntries = new List<Entry>();
             var newExits = new List<Exit>();
+            var imageQueue = new List<EventOut>();
+            var entryImageQueue = new List<EventIn>();
 
             foreach (var eo in exits)
             {
@@ -87,9 +88,8 @@ public class ExitService(ParkingDbContext parkingDbContext, EventDbContext event
                     };
 
                     newEntries.Add(entry);
-                    await InsertEntryImagesAsync(eventIn, token);
-
                     existingEntries.Add(entry.Id);
+                    entryImageQueue.Add(eventIn);
                 }
 
                 if (!existsExit)
@@ -111,7 +111,7 @@ public class ExitService(ParkingDbContext parkingDbContext, EventDbContext event
                     };
 
                     newExits.Add(exit);
-                    await InsertExitImagesAsync(eo, token);
+                    imageQueue.Add(eo);
 
                     existingExits.Add(exit.Id);
 
@@ -125,12 +125,17 @@ public class ExitService(ParkingDbContext parkingDbContext, EventDbContext event
                 }
             }
 
-            // 🚀 BulkInsert thay vì Add + SaveChanges
             if (newEntries.Any())
                 await eventDbContext.BulkInsertAsync(newEntries, cancellationToken: token);
 
             if (newExits.Any())
                 await eventDbContext.BulkInsertAsync(newExits, cancellationToken: token);
+
+            foreach (var eo in imageQueue)
+                await InsertExitImagesAsync(eo, token);
+
+            foreach (var ei in entryImageQueue)
+                await InsertEntryImagesAsync(ei, token);
 
             lastCreatedUtc = exits.Last().CreatedUtc;
 
@@ -142,45 +147,17 @@ public class ExitService(ParkingDbContext parkingDbContext, EventDbContext event
         log($"Tồn tại: {skipped}");
     }
 
-    private async Task InsertEntryImagesAsync(EventIn ei, CancellationToken token)
-    {
-        if (ei.EventInFiles == null || !ei.EventInFiles.Any()) return;
-
-        foreach (var eif in ei.EventInFiles)
-        {
-            if (eif.File == null) continue;
-
-            var newType = ConvertImageType(eif.ImageType);
-
-            bool existsImage = await eventDbContext.EntryImages.AnyAsync(img =>
-                img.EntryId == ei.Id &&
-                img.ObjectKey == eif.File.ObjectKey &&
-                img.Type == newType, token);
-
-            if (!existsImage)
-            {
-                var entryImage = new EntryImage
-                {
-                    EntryId = ei.Id,
-                    ObjectKey = eif.File.ObjectKey,
-                    Type = newType,
-                };
-
-                eventDbContext.EntryImages.Add(entryImage);
-            }
-        }
-    }
-
     private async Task InsertExitImagesAsync(EventOut eo, CancellationToken token)
     {
         if (eo.EventOutFiles == null || !eo.EventOutFiles.Any()) return;
+
+        var newImages = new List<ExitImage>();
 
         foreach (var eif in eo.EventOutFiles)
         {
             if (eif.File == null) continue;
 
             var newType = ConvertImageType(eif.ImageType);
-
             bool existsImage = await eventDbContext.ExitImages.AnyAsync(img =>
                 img.ExitId == eo.Id &&
                 img.ObjectKey == eif.File.ObjectKey &&
@@ -188,19 +165,51 @@ public class ExitService(ParkingDbContext parkingDbContext, EventDbContext event
 
             if (!existsImage)
             {
-                var exitImage = new ExitImage
+                newImages.Add(new ExitImage
                 {
                     ExitId = eo.Id,
                     ObjectKey = eif.File.ObjectKey,
                     Type = newType,
-                };
-
-                eventDbContext.ExitImages.Add(exitImage);
+                });
             }
         }
+
+        if (newImages.Any())
+            await eventDbContext.BulkInsertAsync(newImages, cancellationToken: token);
     }
 
-    string ConvertImageType(string? oldType)
+    private async Task InsertEntryImagesAsync(EventIn ei, CancellationToken token)
+    {
+        if (ei.EventInFiles == null || !ei.EventInFiles.Any()) return;
+
+        var newImages = new List<EntryImage>();
+
+        foreach (var eif in ei.EventInFiles)
+        {
+            if (eif.File == null) continue;
+
+            var newType = ConvertImageType(eif.ImageType);
+            bool existsImage = await eventDbContext.EntryImages.AnyAsync(img =>
+                img.EntryId == ei.Id &&
+                img.ObjectKey == eif.File.ObjectKey &&
+                img.Type == newType, token);
+
+            if (!existsImage)
+            {
+                newImages.Add(new EntryImage
+                {
+                    EntryId = ei.Id,
+                    ObjectKey = eif.File.ObjectKey,
+                    Type = newType,
+                });
+            }
+        }
+
+        if (newImages.Any())
+            await eventDbContext.BulkInsertAsync(newImages, cancellationToken: token);
+    }
+
+    private static string ConvertImageType(string? oldType)
     {
         return oldType switch
         {

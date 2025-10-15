@@ -39,9 +39,11 @@ public class EntryService(ParkingDbContext parkingDbContext, EventDbContext even
                 .Take(batchSize)
                 .ToListAsync(token);
 
-            if (entries.Count == 0) break;
+            if (entries.Count == 0)
+                break;
 
             var newEntries = new List<Entry>();
+            var imageQueue = new List<EventIn>();
 
             foreach (var ei in entries)
             {
@@ -50,7 +52,8 @@ public class EntryService(ParkingDbContext parkingDbContext, EventDbContext even
                 bool existsEntry = existingEntries.Contains(ei.Id);
                 bool existsCustomer = ei.CustomerId.HasValue && existingCustomers.Contains(ei.CustomerId.Value);
 
-                if (!existingAccessKeys.Contains(ei.IdentityId)) continue;
+                if (!existingAccessKeys.Contains(ei.IdentityId))
+                    continue;
 
                 if (!existsEntry)
                 {
@@ -71,7 +74,7 @@ public class EntryService(ParkingDbContext parkingDbContext, EventDbContext even
                     };
 
                     newEntries.Add(entry);
-                    await InsertEntryImagesAsync(ei, token);
+                    imageQueue.Add(ei);
 
                     existingEntries.Add(entry.Id);
 
@@ -88,6 +91,9 @@ public class EntryService(ParkingDbContext parkingDbContext, EventDbContext even
             if (newEntries.Any())
                 await eventDbContext.BulkInsertAsync(newEntries, cancellationToken: token);
 
+            foreach (var ei in imageQueue)
+                await InsertEntryImagesAsync(ei, token);
+
             lastCreatedUtc = entries.Last().CreatedUtc;
 
             log($"Đã xử lý tổng cộng: {inserted + skipped}");
@@ -100,11 +106,15 @@ public class EntryService(ParkingDbContext parkingDbContext, EventDbContext even
 
     private async Task InsertEntryImagesAsync(EventIn ei, CancellationToken token)
     {
-        if (ei.EventInFiles == null || !ei.EventInFiles.Any()) return;
+        if (ei.EventInFiles == null || !ei.EventInFiles.Any())
+            return;
+
+        var newImages = new List<EntryImage>();
 
         foreach (var eif in ei.EventInFiles)
         {
-            if (eif.File == null) continue;
+            if (eif.File == null)
+                continue;
 
             var newType = ConvertImageType(eif.ImageType);
 
@@ -115,19 +125,22 @@ public class EntryService(ParkingDbContext parkingDbContext, EventDbContext even
 
             if (!existsImage)
             {
-                var entryImage = new EntryImage
+                newImages.Add(new EntryImage
                 {
                     EntryId = ei.Id,
                     ObjectKey = eif.File.ObjectKey,
                     Type = newType,
-                };
-
-                eventDbContext.EntryImages.Add(entryImage);
+                });
             }
+        }
+
+        if (newImages.Any())
+        {
+            await eventDbContext.BulkInsertAsync(newImages, cancellationToken: token);
         }
     }
 
-    string ConvertImageType(string? oldType)
+    private static string ConvertImageType(string? oldType)
     {
         return oldType switch
         {

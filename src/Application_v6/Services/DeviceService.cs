@@ -380,13 +380,13 @@ public class DeviceService(
         log($"Tồn tại: {skipped}");
     }
     
-    public async Task InsertLane(DateTime fromDate, Action<string> log, CancellationToken token)
+    public async Task InsertLane(Action<string> log, CancellationToken token)
     {
         int inserted = 0, skipped = 0;
         int batchSize = 5000;
 
-        var query = parkingDbContext.Lanes.AsNoTracking()
-            .Where(l => !l.Deleted && l.CreatedUtc >= fromDate)
+        var query = deviceDbContext.Lanes.AsNoTracking()
+            .Where(l => !l.Deleted)
             .OrderBy(l => l.CreatedUtc);
 
         DateTime? lastCreatedUtc = null;
