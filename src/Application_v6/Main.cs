@@ -35,7 +35,7 @@ public partial class Main : Form
             {
                 var insertService = scope.ServiceProvider.GetRequiredService<CustomerCollectionService>();
                 await insertService.InsertCustomerCollection(Log, token);
-            }
+            } 
             else if (selected == 1)
             {
                 var insertService = scope.ServiceProvider.GetRequiredService<CustomerService>();

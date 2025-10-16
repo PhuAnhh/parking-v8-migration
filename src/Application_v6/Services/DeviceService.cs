@@ -104,7 +104,7 @@ public class DeviceService(
         log($"Thành công: {inserted}");
         log($"Tồn tại: {skipped}");
     }
-    
+
     public async Task InsertComputer(Action<string> log, CancellationToken token)
     {
         int inserted = 0, skipped = 0;
@@ -195,7 +195,7 @@ public class DeviceService(
         log($"Thành công: {inserted}");
         log($"Tồn tại: {skipped}");
     }
-    
+
     public async Task InsertCamera(Action<string> log, CancellationToken token)
     {
         int inserted = 0, skipped = 0;
@@ -287,7 +287,7 @@ public class DeviceService(
         log($"Thành công: {inserted}");
         log($"Tồn tại: {skipped}");
     }
-    
+
     public async Task InsertControlUnit(Action<string> log, CancellationToken token)
     {
         int inserted = 0, skipped = 0;
@@ -379,7 +379,7 @@ public class DeviceService(
         log($"Thành công: {inserted}");
         log($"Tồn tại: {skipped}");
     }
-    
+
     public async Task InsertLane(Action<string> log, CancellationToken token)
     {
         int inserted = 0, skipped = 0;
@@ -471,7 +471,7 @@ public class DeviceService(
         log($"Thành công: {inserted}");
         log($"Tồn tại: {skipped}");
     }
-    
+
     public async Task InsertLed(Action<string> log, CancellationToken token)
     {
         int inserted = 0, skipped = 0;

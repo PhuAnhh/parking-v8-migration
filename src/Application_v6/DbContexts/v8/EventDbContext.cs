@@ -17,9 +17,11 @@ public class EventDbContext : DbContext
     public DbSet<EntryImage> EntryImages { get; set; }
     public DbSet<Exit> Exits { get; set; }
     public DbSet<ExitImage> ExitImages { get; set; }
-    
-    public EventDbContext(DbContextOptions<EventDbContext> options) : base(options) {}
-    
+
+    public EventDbContext(DbContextOptions<EventDbContext> options) : base(options)
+    {
+    }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfiguration(new AccessKeyConfiguration());

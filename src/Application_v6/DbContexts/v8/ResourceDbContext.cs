@@ -13,8 +13,10 @@ public class ResourceDbContext : DbContext
     public DbSet<Customer> Customers { get; set; }
     public DbSet<ResourceCustomerCollection> CustomerCollections { get; set; }
     public DbSet<Device> Devices { get; set; }
-    
-    public ResourceDbContext(DbContextOptions<ResourceDbContext> options) : base(options) {}
+
+    public ResourceDbContext(DbContextOptions<ResourceDbContext> options) : base(options)
+    {
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -22,7 +24,8 @@ public class ResourceDbContext : DbContext
         modelBuilder.ApplyConfiguration(new AccessKeyCollectionConfiguration());
         modelBuilder.ApplyConfiguration(new AccessKeyMetricConfiguration());
         modelBuilder.ApplyConfiguration(new CustomerConfiguration());
-        modelBuilder.ApplyConfiguration(new Application_v6.Configurations.v8.Resource.CustomerCollectionConfiguration());
+        modelBuilder.ApplyConfiguration(
+            new Application_v6.Configurations.v8.Resource.CustomerCollectionConfiguration());
         modelBuilder.ApplyConfiguration(new DeviceConfiguration());
     }
 }
