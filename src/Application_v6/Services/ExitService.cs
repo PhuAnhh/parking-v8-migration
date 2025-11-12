@@ -216,6 +216,7 @@ public class ExitService(ParkingDbContext parkingDbContext, EventDbContext event
             "Plate" => "PLATE_NUMBER",
             "Overview" => "PANORAMA",
             "Vehicle" => "VEHICLE",
+            _ => "UNKNOWN"
         };
     }
 }
