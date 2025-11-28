@@ -1,10 +1,11 @@
-namespace Application_TV.Entities.v6;
+namespace Application_v6.Entities.v8;
 
-public class Gate
+public class Device
 {
     public Guid Id { get; set; }
-    public string Code { get; set; }
     public string Name { get; set; }
+    public string? Code  { get; set; }
+    public string Type { get; set; }
     public bool Enabled { get; set; }
     public bool Deleted { get; set; }
     public DateTime CreatedUtc { get; set; }
