@@ -1,4 +1,4 @@
-using Application_TV.Entities.v8.Resource.Resource;
+using Application_v6.Entities.v8.Resource;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 

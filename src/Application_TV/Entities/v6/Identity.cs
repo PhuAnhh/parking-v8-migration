@@ -1,4 +1,4 @@
-namespace Application_v6.Entities.v6.Parking;
+namespace Application_TV.Entities.v6;
 
 public class Identity
 {

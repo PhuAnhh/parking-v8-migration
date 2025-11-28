@@ -1,4 +1,4 @@
-using Application_v6.Entities.v6.Parking;
+using Application_TV.Entities.v6;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 

@@ -2,9 +2,8 @@ using Application_TV.Entities.v6;
 using Microsoft.EntityFrameworkCore;
 using Application_v6.Configurations.v6.Device;
 using Application_v6.Configurations.v6.Parking;
-using Application_v6.Entities.v6.Parking;
+using Application_v6.Entities.v6;
 using Application_v6.Entities.v6.Device;
-using File = Application_v6.Entities.v6.Parking.File;
 
 namespace Application_v6.DbContexts.v6;
 
@@ -21,7 +20,6 @@ public class ParkingDbContext : DbContext
     public DbSet<EventInFile> EventInFiles { get; set; }
     public DbSet<EventOut> EventOuts { get; set; }
     public DbSet<EventOutFile> EventOutFiles { get; set; }
-    public DbSet<File> Files { get; set; }
 
     public ParkingDbContext(DbContextOptions<ParkingDbContext> options) : base(options)
     {
@@ -40,7 +38,6 @@ public class ParkingDbContext : DbContext
         modelBuilder.ApplyConfiguration(new EventInFileConfiguration());
         modelBuilder.ApplyConfiguration(new EventOutConfiguration());
         modelBuilder.ApplyConfiguration(new EventOutFileConfiguration());
-        modelBuilder.ApplyConfiguration(new FileConfiguration());
     }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

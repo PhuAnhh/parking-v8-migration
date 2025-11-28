@@ -1,4 +1,4 @@
-namespace Application_v6.Entities.v8;
+namespace Application_TV.Entities.v8.Resource;
 
 public class Device
 {
