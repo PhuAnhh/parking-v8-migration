@@ -15,6 +15,7 @@ public class IdentityConfiguration : IEntityTypeConfiguration<Identity>
         builder.Property(x => x.Code).HasColumnName("Code");
         builder.Property(x => x.IdentityGroupId).HasColumnName("IdentityGroupId");
         builder.Property(x => x.Type).HasColumnName("Type");
+        builder.Property(x => x.Note).HasColumnName("Note");
         builder.Property(x => x.Status).HasColumnName("Status");
         builder.Property(x => x.Deleted).HasColumnName("Deleted");
         builder.Property(x => x.CreatedUtc).HasColumnName("CreatedUtc");
