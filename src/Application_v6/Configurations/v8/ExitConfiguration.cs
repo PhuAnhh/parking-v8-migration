@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Application_v6.Entities.v8;
 
-namespace Application_v6.Configurations.v8;
+namespace Application_TV.Configurations.v8;
 
 public class ExitConfiguration : IEntityTypeConfiguration<Exit>
 {

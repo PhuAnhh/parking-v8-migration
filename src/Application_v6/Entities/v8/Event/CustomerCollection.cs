@@ -1,5 +1,4 @@
-namespace Application_TV.Entities.v8.Resource.Event;
-
+namespace Application_v6.Entities.v8.Event;
 public class EventCustomerCollection
 {
     public Guid Id { get; set; }

@@ -1,4 +1,4 @@
-namespace Application_TV.Entities.v8.Resource;
+namespace Application_TV.Entities.v8;
 
 public class Entry
 {

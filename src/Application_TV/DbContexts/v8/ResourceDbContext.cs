@@ -1,8 +1,9 @@
 using Microsoft.EntityFrameworkCore;
-using Application_v6.Configurations.v8;
-using Application_TV.Entities.v8.Resource.Resource;
+using Application_TV.Configurations.v8;
+using Application_TV.Entities.v8;
+using Application_TV.Entities.v8.Resource;
 
-namespace Application_v6.DbContexts.v8;
+namespace Application_TV.DbContexts.v8;
 
 public class ResourceDbContext : DbContext
 {
@@ -24,7 +25,7 @@ public class ResourceDbContext : DbContext
         modelBuilder.ApplyConfiguration(new AccessKeyMetricConfiguration());
         modelBuilder.ApplyConfiguration(new CustomerConfiguration());
         modelBuilder.ApplyConfiguration(
-            new Application_v6.Configurations.v8.Resource.CustomerCollectionConfiguration());
+            new Application_TV.Configurations.v8.Resource.CustomerCollectionConfiguration());
         modelBuilder.ApplyConfiguration(new DeviceConfiguration());
     }
 }

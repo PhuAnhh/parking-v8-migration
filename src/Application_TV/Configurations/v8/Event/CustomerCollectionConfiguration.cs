@@ -1,8 +1,8 @@
+using Application_TV.Entities.v8.Event;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Application_TV.Entities.v8.Resource.Event;
 
-namespace Application_v6.Configurations.v8.Event;
+namespace Application_TV.Configurations.v8.Event;
 
 public class CustomerCollectionConfiguration : IEntityTypeConfiguration<EventCustomerCollection>
 {

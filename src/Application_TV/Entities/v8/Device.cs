@@ -1,4 +1,4 @@
-namespace Application_TV.Entities.v8.Resource;
+namespace Application_TV.Entities.v8;
 
 public class Device
 {
@@ -6,6 +6,7 @@ public class Device
     public string Name { get; set; }
     public string? Code  { get; set; }
     public string Type { get; set; }
+    public Guid? ParentId { get; set; }
     public bool Enabled { get; set; }
     public bool Deleted { get; set; }
     public DateTime CreatedUtc { get; set; }

@@ -2,13 +2,13 @@ using Application_TV.Entities.v6;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace Application_v6.Configurations.v6.Parking;
+namespace Application_TV.Configurations.v6;
 
 public class CustomerGroupConfiguration : IEntityTypeConfiguration<CustomerGroup>
 {
     public void Configure(EntityTypeBuilder<CustomerGroup> builder)
     {
-        builder.ToTable("CustomerGroups");
+        builder.ToTable("CustomerGroup");
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("Id");
         builder.Property(x => x.ParentId).HasColumnName("ParentId");

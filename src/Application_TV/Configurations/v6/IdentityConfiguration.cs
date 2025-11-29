@@ -2,13 +2,13 @@ using Application_TV.Entities.v6;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace Application_v6.Configurations.v6.Parking;
+namespace Application_TV.Configurations.v6;
 
 public class IdentityConfiguration : IEntityTypeConfiguration<Identity>
 {
     public void Configure(EntityTypeBuilder<Identity> builder)
     {
-        builder.ToTable("Identities");
+        builder.ToTable("Identity");
         builder.HasKey(n => n.Id);
         builder.Property(x => x.Id).HasColumnName("Id");
         builder.Property(x => x.Name).HasColumnName("Name");

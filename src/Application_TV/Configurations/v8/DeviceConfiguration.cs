@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Application_TV.Entities.v8.Resource;
+using Application_TV.Entities.v8;
 
-namespace Application_v6.Configurations.v8;
+namespace Application_TV.Configurations.v8;
 
 public class DeviceConfiguration : IEntityTypeConfiguration<Device>
 {
@@ -14,6 +14,7 @@ public class DeviceConfiguration : IEntityTypeConfiguration<Device>
         builder.Property(x => x.Name).HasColumnName("name");
         builder.Property(x => x.Code).HasColumnName("code");
         builder.Property(x => x.Type).HasColumnName("type").HasConversion<string>();
+        builder.Property(x => x.ParentId).HasColumnName("parent_id");
         builder.Property(x => x.Enabled).HasColumnName("enabled");
         builder.Property(x => x.Deleted).HasColumnName("deleted");
         builder.Property(x => x.CreatedUtc).HasColumnName("created_utc");

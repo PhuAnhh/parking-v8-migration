@@ -15,6 +15,4 @@ public class EventOut
     public DateTime CreatedUtc { get; set; }
     public DateTime UpdatedUtc { get; set; }
     public string CreatedBy { get; set; }
-    
-    public ICollection<EventOutFile> EventOutFiles { get; set; }
 }

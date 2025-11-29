@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using Application_v6.Configurations.v8;
+using Application_TV.Configurations.v8;
 using Application_v6.Entities.v8;
 using Application_v6.Entities.v8.Event;
 
@@ -28,7 +28,7 @@ public class EventDbContext : DbContext
         modelBuilder.ApplyConfiguration(new AccessKeyCollectionConfiguration());
         modelBuilder.ApplyConfiguration(new AccessKeyMetricConfiguration());
         modelBuilder.ApplyConfiguration(new CustomerConfiguration());
-        modelBuilder.ApplyConfiguration(new Application_v6.Configurations.v8.Event.CustomerCollectionConfiguration());
+        modelBuilder.ApplyConfiguration(new Application_TV.Configurations.v8.Event.CustomerCollectionConfiguration());
         modelBuilder.ApplyConfiguration(new DeviceConfiguration());
         modelBuilder.ApplyConfiguration(new EntryConfiguration());
         modelBuilder.ApplyConfiguration(new EntryImageConfiguration());

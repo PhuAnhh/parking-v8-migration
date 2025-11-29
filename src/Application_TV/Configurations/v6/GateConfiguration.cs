@@ -2,13 +2,13 @@ using Application_TV.Entities.v6;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace Application_v6.Configurations.v6.Device;
+namespace Application_TV.Configurations.v6;
 
 public class GateConfiguration : IEntityTypeConfiguration<Gate>
 {
     public void Configure(EntityTypeBuilder<Gate> builder)
     {
-        builder.ToTable("Gates");
+        builder.ToTable("Gate");
         builder.HasKey(n => n.Id);
         builder.HasQueryFilter(x => !x.Deleted);
         builder.Property(x => x.Id).HasColumnName("Id");

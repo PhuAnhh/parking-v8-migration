@@ -2,7 +2,7 @@ using Application_TV.Entities.v6;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace Application_v6.Configurations.v6.Parking;
+namespace Application_TV.Configurations.v6;
 
 public class EventInConfiguration : IEntityTypeConfiguration<EventIn>
 {

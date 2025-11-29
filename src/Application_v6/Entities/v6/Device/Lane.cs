@@ -1,5 +1,4 @@
-namespace Application_TV.Entities.v6;
-
+namespace Application_v6.Entities.v6.Device;
 public class Lane
 {
     public Guid Id { get; set; }

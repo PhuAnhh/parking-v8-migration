@@ -2,7 +2,7 @@ using Application_v6.Entities.v8.Resource;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace Application_v6.Configurations.v8.Resource;
+namespace Application_TV.Configurations.v8.Resource;
 
 public class CustomerCollectionConfiguration : IEntityTypeConfiguration<ResourceCustomerCollection>
 {
