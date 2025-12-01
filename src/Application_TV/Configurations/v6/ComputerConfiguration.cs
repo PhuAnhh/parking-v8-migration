@@ -12,7 +12,6 @@ public class ComputerConfiguration : IEntityTypeConfiguration<Computer>
         builder.HasKey(n => n.Id);
         builder.Property(x => x.Id).HasColumnName("Id");
         builder.Property(x => x.Name).HasColumnName("Name");
-        builder.Property(x => x.GateId).HasColumnName("GateId");
         builder.Property(x => x.Enabled).HasColumnName("Enabled").HasConversion<bool>();
         builder.Property(x => x.Deleted).HasColumnName("Deleted").HasConversion<bool>();
         builder.Property(x => x.CreatedUtc).HasColumnName("CreatedUtc").HasConversion<DateTime>();

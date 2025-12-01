@@ -62,7 +62,7 @@ public class AccessKeyService(
                 {
                     Id = i.Id,
                     Name = i.Name,
-                    Code = i.Code,
+                    Code = i.Code ?? "",
                     Type = "CARD",
                     CollectionId = i.IdentityGroupId,
                     Status = i.Status switch
@@ -73,7 +73,7 @@ public class AccessKeyService(
                     },
                     Deleted = i.Deleted,
                     CreatedUtc = i.CreatedUtc,
-                    UpdatedUtc = i.UpdatedUtc,
+                    UpdatedUtc = i.UpdatedUtc ?? DateTime.UtcNow,
                 };
 
                 newAccessKeys.Add(accessKey);
@@ -116,9 +116,13 @@ public class AccessKeyService(
                     continue;
                 }
 
-                var collectionId = await parkingDbContext.IdentityGroups
-                    .Where(g => g.VehicleTypeId == v.VehicleTypeId && !g.Deleted)
-                    .Select(g => g.Id)
+                var identityGroupId = await (
+                        from map in parkingDbContext.RegisteredVehicleIdentityMaps
+                        join identity in parkingDbContext.Identites on map.IdentityId equals identity.Id
+                        where map.RegisteredVehicleId == v.Id
+                              && !identity.Deleted
+                        select identity.IdentityGroupId
+                    )
                     .FirstOrDefaultAsync(token);
 
                 var ak = new AccessKey
@@ -127,13 +131,13 @@ public class AccessKeyService(
                     Name = v.Name,
                     Code = v.PlateNumber,
                     Type = "VEHICLE",
-                    CollectionId = collectionId,
+                    CollectionId = identityGroupId,
                     CustomerId = existingCustomers.Contains(v.CustomerId) ? v.CustomerId : null,
                     ExpiredUtc = v.ExpireUtc,
                     Status = "IN_USE",
                     Deleted = v.Deleted,
                     CreatedUtc = v.CreatedUtc,
-                    UpdatedUtc = v.UpdatedUtc
+                    UpdatedUtc = v.UpdatedUtc ?? DateTime.UtcNow
                 };
 
                 newAccessKeys.Add(ak);
@@ -167,6 +171,18 @@ public class AccessKeyService(
         {
             token.ThrowIfCancellationRequested();
 
+            if (!existingEventAKeys.Contains(m.IdentityId))
+            {
+                log($"[SKIPPED - METRIC] IdentityId {m.IdentityId} not migrated as AccessKey");
+                continue;
+            }
+
+            if (!existingEventAKeys.Contains(m.RegisteredVehicleId))
+            {
+                log($"[SKIPPED - METRIC] Vehicle AccessKeyId {m.RegisteredVehicleId} not found");
+                continue;
+            }
+            
             newMetrics.Add(new AccessKeyMetric
             {
                 AccessKeyId = m.IdentityId,
@@ -177,7 +193,7 @@ public class AccessKeyService(
         if (newMetrics.Any())
         {
             await resourceDbContext.BulkInsertAsync(newMetrics, cancellationToken: token);
-            log($"Đã migrate {newMetrics.Count} access_key_metrics");
+            await eventDbContext.BulkInsertAsync(newMetrics, cancellationToken: token);
         }
         else
         {

@@ -26,4 +26,10 @@
         </Content>
     </ItemGroup>
 
+    <ItemGroup>
+      <Compile Update="Main.cs">
+        <SubType>Form</SubType>
+      </Compile>
+    </ItemGroup>
+
 </Project>

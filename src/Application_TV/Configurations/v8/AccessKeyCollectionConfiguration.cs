@@ -13,6 +13,7 @@ public class AccessKeyCollectionConfiguration : IEntityTypeConfiguration<AccessK
         builder.Property(n => n.Id).HasColumnName("id");
         builder.Property(x => x.Name).HasColumnName("name");
         builder.Property(x => x.Code).HasColumnName("code");
+        builder.Property(x => x.Enabled).HasColumnName("enabled");
         builder.Property(x => x.Deleted).HasColumnName("deleted");
         builder.Property(x => x.VehicleType).HasColumnName("vehicle_type").HasConversion<string>();
         builder.Property(x => x.CreatedUtc).HasColumnName("created_utc");

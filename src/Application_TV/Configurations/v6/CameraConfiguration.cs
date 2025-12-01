@@ -13,7 +13,6 @@ public class CameraConfiguration : IEntityTypeConfiguration<Camera>
         builder.Property(x => x.Id).HasColumnName("Id");
         builder.Property(x => x.Name).HasColumnName("Name");
         builder.Property(x => x.Code).HasColumnName("Code");
-        builder.Property(x => x.ComputerId).HasColumnName("ComputerId");
         builder.Property(x => x.Enabled).HasColumnName("Enabled");
         builder.Property(x => x.Deleted).HasColumnName("Deleted");
         builder.Property(x => x.CreatedUtc).HasColumnName("CreatedUtc");

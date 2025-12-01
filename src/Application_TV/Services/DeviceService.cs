@@ -56,11 +56,10 @@ public class DeviceService(
                         Name = g.Name,
                         Code = g.Code,
                         Type = "GATE",
-                        ParentId = null,
                         Enabled = g.Enabled,
                         Deleted = g.Deleted,
                         CreatedUtc = g.CreatedUtc,
-                        UpdatedUtc = g.UpdatedUtc,
+                        UpdatedUtc = g.UpdatedUtc ?? DateTime.UtcNow,
                     };
 
                     newResourceDevices.Add(device);
@@ -148,11 +147,10 @@ public class DeviceService(
                         Id = c.Id,
                         Name = c.Name,
                         Type = "COMPUTER",
-                        ParentId = c.GateId,
                         Enabled = c.Enabled,
                         Deleted = c.Deleted,
                         CreatedUtc = c.CreatedUtc,
-                        UpdatedUtc = c.UpdatedUtc,
+                        UpdatedUtc = c.UpdatedUtc ?? DateTime.UtcNow,
                     };
 
                     newResourceDevices.Add(device);
@@ -241,11 +239,10 @@ public class DeviceService(
                         Name = c.Name,
                         Code = c.Code,
                         Type = "CAMERA",
-                        ParentId = c.ComputerId,
                         Enabled = c.Enabled,
                         Deleted = c.Deleted,
                         CreatedUtc = c.CreatedUtc,
-                        UpdatedUtc = c.UpdatedUtc,
+                        UpdatedUtc = c.UpdatedUtc ?? DateTime.UtcNow,
                     };
 
                     newResourceDevices.Add(device);
@@ -334,11 +331,10 @@ public class DeviceService(
                         Name = cu.Name,
                         Code = cu.Code,
                         Type = "CONTROL_UNIT",
-                        ParentId = cu.ComputerId,
                         Enabled = cu.Enabled,
                         Deleted = cu.Deleted,
                         CreatedUtc = cu.CreatedUtc,
-                        UpdatedUtc = cu.UpdatedUtc,
+                        UpdatedUtc = cu.UpdatedUtc ?? DateTime.UtcNow,
                     };
 
                     newResourceDevices.Add(device);
@@ -427,11 +423,10 @@ public class DeviceService(
                         Name = l.Name,
                         Code = l.Code,
                         Type = "LANE",
-                        ParentId = l.ComputerId,
                         Enabled = l.Enabled,
                         Deleted = l.Deleted,
                         CreatedUtc = l.CreatedUtc,
-                        UpdatedUtc = l.UpdatedUtc,
+                        UpdatedUtc = l.UpdatedUtc ?? DateTime.UtcNow,
                     };
 
                     newResourceDevices.Add(device);
@@ -519,11 +514,10 @@ public class DeviceService(
                         Id = l.Id,
                         Name = l.Name,
                         Type = "LED",
-                        ParentId = l.ComputerId,
                         Enabled = l.Enabled,
                         Deleted = l.Deleted,
                         CreatedUtc = l.CreatedUtc,
-                        UpdatedUtc = l.UpdatedUtc,
+                        UpdatedUtc = l.UpdatedUtc ?? DateTime.UtcNow,
                     };
 
                     newResourceDevices.Add(device);

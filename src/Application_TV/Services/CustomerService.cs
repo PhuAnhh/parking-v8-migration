@@ -60,7 +60,7 @@ public class CustomerService(
                         PhoneNumber = c.PhoneNumber,
                         Deleted = c.Deleted,
                         CreatedUtc = c.CreatedUtc,
-                        UpdatedUtc = c.UpdatedUtc,
+                        UpdatedUtc = c.UpdatedUtc ?? DateTime.UtcNow, 
                     };
 
                     newResourceCustomers.Add(entity);
