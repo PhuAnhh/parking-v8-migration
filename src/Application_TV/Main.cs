@@ -81,16 +81,16 @@ public partial class Main : Form
                 var insertService = scope.ServiceProvider.GetRequiredService<DeviceService>();
                 await insertService.InsertLed(Log, token);
             }
-            // else if (selected == 10)
-            // {
-            //     var insertService = scope.ServiceProvider.GetRequiredService<EntryService>();
-            //     await insertService.InsertEntry(Log, token);
-            // }
-            // else if (selected == 11)
-            // {
-            //     var insertService = scope.ServiceProvider.GetRequiredService<ExitService>();
-            //     await insertService.InsertExit(Log, token);
-            // }
+            else if (selected == 10)
+            {
+                var insertService = scope.ServiceProvider.GetRequiredService<EntryService>();
+                await insertService.InsertEntry(Log, token);
+            }
+            else if (selected == 11)
+            {
+                var insertService = scope.ServiceProvider.GetRequiredService<ExitService>();
+                await insertService.InsertExit(Log, token);
+            }
             MessageBox.Show("Success", "✔ Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
         catch (OperationCanceledException)

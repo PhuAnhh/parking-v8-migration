@@ -25,7 +25,7 @@ public class AccessKeyService(
             await eventDbContext.Customers.AsNoTracking().Select(c => c.Id).ToListAsync(token));
 
         var identitiesQuery = parkingDbContext.Identites
-            .Where(i => !i.Deleted && i.Type == "Card")
+            .Where(i => !i.Deleted && (i.Type == "Card" || i.Type == "PlateNumber"))
             .OrderBy(i => i.CreatedUtc);
 
         var vehiclesQuery = parkingDbContext.RegisteredVehicles
@@ -58,30 +58,55 @@ public class AccessKeyService(
                     continue;
                 }
 
-                var accessKey = new AccessKey
+                AccessKey accessKey;
+
+                if (i.Type == "PlateNumber")
                 {
-                    Id = i.Id,
-                    Name = i.Name,
-                    Code = i.Code ?? "",
-                    Type = "CARD",
-                    CollectionId = i.IdentityGroupId,
-                    Status = i.Status switch
+                    
+                    accessKey = new AccessKey
                     {
-                        "InUse" => "IN_USE",
-                        "Locked" => "LOCKED",
-                        "NotUse" => "UN_USED"
-                    },
-                    Deleted = i.Deleted,
-                    CreatedUtc = i.CreatedUtc,
-                    UpdatedUtc = i.UpdatedUtc ?? DateTime.UtcNow,
-                };
+                        Id = i.Id,
+                        Name = i.Name,
+                        Code = i.Code ?? "",
+                        Type = "VEHICLE",
+                        CollectionId = i.IdentityGroupId,
+                        Status = "IN_USE",
+                        Deleted = i.Deleted,
+                        CreatedUtc = i.CreatedUtc,
+                        UpdatedUtc = i.UpdatedUtc ?? DateTime.UtcNow,
+                    };
+                }
+                else if (i.Type == "Card")
+                {
+                    accessKey = new AccessKey
+                    {
+                        Id = i.Id,
+                        Name = i.Name,
+                        Code = i.Code ?? "",
+                        Type = "CARD",
+                        CollectionId = i.IdentityGroupId,
+                        Status = i.Status switch
+                        {
+                            "InUse" => "IN_USE",
+                            "Locked" => "LOCKED",
+                            "NotUse" => "UN_USED"
+                        },
+                        Deleted = i.Deleted,
+                        CreatedUtc = i.CreatedUtc,
+                        UpdatedUtc = i.UpdatedUtc ?? DateTime.UtcNow,
+                    };
+                }
+                else
+                {
+                    continue;
+                }
 
                 newAccessKeys.Add(accessKey);
                 existingEventAKeys.Add(i.Id);
                 existingResourceAKeys.Add(i.Id);
 
                 inserted++;
-                log($"[INSERTED - IDENTITY] {i.Id} - {i.Name}");
+                log($"[INSERTED - {i.Type.ToUpper()}] {i.Id} - {i.Name}");
             }
 
             if (newAccessKeys.Any())
@@ -160,7 +185,7 @@ public class AccessKeyService(
         log("========== KẾT QUẢ ==========");
         log($"Thành công: {inserted}");
         log($"Tồn tại: {skipped}");
-        
+
         var maps = await parkingDbContext.RegisteredVehicleIdentityMaps
             .AsNoTracking()
             .ToListAsync(token);
@@ -182,7 +207,7 @@ public class AccessKeyService(
                 log($"[SKIPPED - METRIC] Vehicle AccessKeyId {m.RegisteredVehicleId} not found");
                 continue;
             }
-            
+
             newMetrics.Add(new AccessKeyMetric
             {
                 AccessKeyId = m.IdentityId,

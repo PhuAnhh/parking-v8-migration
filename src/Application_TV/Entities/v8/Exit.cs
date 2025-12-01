@@ -15,4 +15,5 @@ public class Exit
     public bool Deleted { get; set; }
     public DateTime CreatedUtc { get; set; }
     public DateTime UpdatedUtc { get; set; }
+    public Guid CollectionId { get; set; }
 }

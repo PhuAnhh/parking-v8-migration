@@ -23,5 +23,6 @@ public class ExitConfiguration : IEntityTypeConfiguration<Exit>
         builder.Property(x => x.Deleted).HasColumnName("deleted");
         builder.Property(x => x.CreatedUtc).HasColumnName("created_utc");
         builder.Property(x => x.UpdatedUtc).HasColumnName("updated_utc");
+        builder.Property(x => x.CollectionId).HasColumnName("collection_id");
     }
 }

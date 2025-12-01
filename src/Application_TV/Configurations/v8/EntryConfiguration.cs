@@ -15,6 +15,7 @@ public class EntryConfiguration : IEntityTypeConfiguration<Entry>
         builder.Property(x => x.DeviceId).HasColumnName("device_id");
         builder.Property(x => x.AccessKeyId).HasColumnName("access_key_id");
         builder.Property(x => x.CustomerId).HasColumnName("customer_id");
+        builder.Property(x => x.CollectionId).HasColumnName("collection_id");
         builder.Property(x => x.Exited).HasColumnName("exited");
         builder.Property(x => x.Amount).HasColumnName("amount");
         builder.Property(x => x.Note).HasColumnName("note");

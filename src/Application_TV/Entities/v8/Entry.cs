@@ -7,6 +7,7 @@ public class Entry
     public Guid AccessKeyId { get; set; }
     public Guid DeviceId { get; set; }
     public Guid? CustomerId { get; set; }
+    public Guid CollectionId { get; set; }
     public bool Exited { get; set; }
     public long Amount { get; set; }
     public string? Note { get; set; }

@@ -21,6 +21,7 @@ public class ParkingDbContext : DbContext
     public DbSet<EventOut> EventOuts { get; set; }
     public DbSet<RegisteredVehicle> RegisteredVehicles { get; set; }
     public DbSet<RegisteredVehicleIdentityMap> RegisteredVehicleIdentityMaps { get; set; }
+    public DbSet<PhysicalFile> PhysicalFiles { get; set; }
 
     public ParkingDbContext(DbContextOptions<ParkingDbContext> options) : base(options)
     {
@@ -42,6 +43,7 @@ public class ParkingDbContext : DbContext
         modelBuilder.ApplyConfiguration(new EventOutConfiguration());
         modelBuilder.ApplyConfiguration(new RegisteredVehicleConfiguration());
         modelBuilder.ApplyConfiguration(new RegisteredVehicleIdentityMapConfiguration());
+        modelBuilder.ApplyConfiguration(new PhysicalFileIdConfiguration());
     }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

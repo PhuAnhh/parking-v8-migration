@@ -158,7 +158,6 @@ public class DeviceService(
                     {
                         Id = device.Id,
                         Name = device.Name,
-                        Code = device.Code,
                         Type = device.Type,
                         Enabled = device.Enabled,
                         Deleted = device.Deleted,
@@ -237,7 +236,6 @@ public class DeviceService(
                     {
                         Id = c.Id,
                         Name = c.Name,
-                        Code = c.Code,
                         Type = "CAMERA",
                         Enabled = c.Enabled,
                         Deleted = c.Deleted,
@@ -250,7 +248,6 @@ public class DeviceService(
                     {
                         Id = device.Id,
                         Name = device.Name,
-                        Code = device.Code,
                         Type = device.Type,
                         Enabled = device.Enabled,
                         Deleted = device.Deleted,

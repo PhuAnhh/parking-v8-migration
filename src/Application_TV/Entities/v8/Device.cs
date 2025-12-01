@@ -6,7 +6,6 @@ public class Device
     public string Name { get; set; }
     public string? Code  { get; set; }
     public string Type { get; set; }
-    public Guid? ParentId { get; set; }
     public bool Enabled { get; set; }
     public bool Deleted { get; set; }
     public DateTime CreatedUtc { get; set; }
