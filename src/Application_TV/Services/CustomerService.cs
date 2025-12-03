@@ -59,8 +59,8 @@ public class CustomerService(
                         Address = c.Address,
                         PhoneNumber = c.PhoneNumber,
                         Deleted = c.Deleted,
-                        CreatedUtc = c.CreatedUtc,
-                        UpdatedUtc = c.UpdatedUtc ?? DateTime.UtcNow, 
+                        CreatedUtc = DateTime.UtcNow,
+                        UpdatedUtc = DateTime.UtcNow, 
                     };
 
                     newResourceCustomers.Add(entity);
@@ -73,8 +73,8 @@ public class CustomerService(
                         Address = entity.Address,
                         PhoneNumber = entity.PhoneNumber,
                         Deleted = entity.Deleted,
-                        CreatedUtc = entity.CreatedUtc,
-                        UpdatedUtc = entity.UpdatedUtc,
+                        CreatedUtc = DateTime.UtcNow,
+                        UpdatedUtc = DateTime.UtcNow,
                     });
 
                     resourceIds.Add(c.Id);

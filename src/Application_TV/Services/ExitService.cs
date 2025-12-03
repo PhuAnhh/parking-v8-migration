@@ -1,45 +1,62 @@
 using Application_TV.DbContexts.v6;
 using Application_TV.DbContexts.v8;
-using Application_TV.Entities.v6;
 using Application_TV.Entities.v8;
 using EFCore.BulkExtensions;
 using Microsoft.EntityFrameworkCore;
+using System.Collections.Concurrent;
 
 namespace Application_TV.Services;
 
 public class ExitService(ParkingDbContext parkingDbContext, EventDbContext eventDbContext)
 {
+    private readonly ConcurrentDictionary<string, List<int>> _parsedImageIds = new();
+
     public async Task InsertExit(Action<string> log, CancellationToken token)
     {
-        var batchSize = 5000;
+        var batchSize = 10000;
         int inserted = 0, skipped = 0;
 
-        var query = parkingDbContext.EventOuts.AsNoTracking()
-            .OrderBy(e => e.CreatedUtc);
+        eventDbContext.ChangeTracker.AutoDetectChangesEnabled = false;
+        eventDbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
 
-        DateTime? lastCreatedUtc = null;
+        log("Đang load danh sách exits đã tồn tại...");
+        var existingExits = await LoadExistingExitsInBatches(token);
+        log($"Đã load {existingExits.Count} exits tồn tại");
 
-        var existingExits = new HashSet<Guid>(
-            await eventDbContext.Exits.AsNoTracking().Select(e => e.Id).ToListAsync(token));
-
+        log("Đang load customers và collections...");
         var existingCustomers = new HashSet<Guid>(
             await eventDbContext.Customers.AsNoTracking().Select(c => c.Id).ToListAsync(token));
-
-        var existingAccessKeys = new HashSet<Guid>(
-            await eventDbContext.AccessKeys.AsNoTracking().Select(ak => ak.Id).ToListAsync(token));
 
         var existingCollections = new HashSet<Guid>(
             await eventDbContext.AccessKeyCollections.AsNoTracking().Select(ac => ac.Id).ToListAsync(token));
 
+        log("Đang load access keys...");
+        var existingAccessKeys = await LoadRelevantAccessKeys(token);
+        log($"Đã load {existingAccessKeys.Count} access keys");
+
+        log("Đang load file map...");
         var fileMap = await parkingDbContext.PhysicalFiles
             .AsNoTracking()
             .ToDictionaryAsync(f => f.Id, f => f.FileKey, token);
+        log($"Đã load {fileMap.Count} files");
+
+        var bulkConfig = new BulkConfig
+        {
+            BatchSize = 5000,
+            BulkCopyTimeout = 0,
+            EnableStreaming = true,
+            UseTempDB = true
+        };
+
+        DateTime? lastCreatedUtc = null;
 
         while (true)
         {
-            var exits = await query
+            var exits = await parkingDbContext.EventOuts
+                .AsNoTracking()
                 .Where(e => lastCreatedUtc == null || e.CreatedUtc > lastCreatedUtc)
                 .OrderBy(e => e.CreatedUtc)
+                .ThenBy(e => e.Id)
                 .Take(batchSize)
                 .ToListAsync(token);
 
@@ -57,10 +74,9 @@ public class ExitService(ParkingDbContext parkingDbContext, EventDbContext event
                 if (existingExits.Contains(eo.Id))
                 {
                     skipped++;
-                    log($"[SKIPPED - EXIT EXISTS] {eo.Id}");
                     continue;
                 }
-                
+
                 if (!eo.EventInIdentityId.HasValue || !existingAccessKeys.Contains(eo.EventInIdentityId.Value))
                 {
                     skipped++;
@@ -137,27 +153,23 @@ public class ExitService(ParkingDbContext parkingDbContext, EventDbContext event
                 AddEntryImages(newEntryImages, eo.EventInPhysicalFileIds, fileMap, newEntryId);
 
                 inserted++;
-                log($"[INSERTED EXIT + ENTRY] {eo.Id} -> Entry {newEntryId}");
             }
 
             if (newEntries.Any())
-                await eventDbContext.BulkInsertAsync(newEntries, cancellationToken: token);
+                await eventDbContext.BulkInsertAsync(newEntries, bulkConfig, cancellationToken: token);
 
             if (newExits.Any())
-                await eventDbContext.BulkInsertAsync(newExits, cancellationToken: token);
+                await eventDbContext.BulkInsertAsync(newExits, bulkConfig, cancellationToken: token);
 
-            if (newEntryImages.Any()) await eventDbContext.BulkInsertAsync(newEntryImages, cancellationToken: token);
-            if (newExitImages.Any()) await eventDbContext.BulkInsertAsync(newExitImages, cancellationToken: token);
+            if (newEntryImages.Any())
+                await eventDbContext.BulkInsertAsync(newEntryImages, bulkConfig, cancellationToken: token);
 
-            // foreach (var eo in imageQueue)
-            //     await InsertExitImagesAsync(eo, token);
-            //
-            // foreach (var ei in entryImageQueue)
-            //     await InsertEntryImagesAsync(ei, token);
+            if (newExitImages.Any())
+                await eventDbContext.BulkInsertAsync(newExitImages, bulkConfig, cancellationToken: token);
 
             lastCreatedUtc = exits.Last().CreatedUtc;
 
-            log($"Đã xử lý tổng cộng: {inserted + skipped}");
+            log($"Đã xử lý: {inserted + skipped} | Thành công: {inserted} | Bỏ qua: {skipped}");
         }
 
         log("========== KẾT QUẢ ==========");
@@ -165,19 +177,72 @@ public class ExitService(ParkingDbContext parkingDbContext, EventDbContext event
         log($"Tồn tại: {skipped}");
     }
 
-    private static void AddEntryImages(
-        List<EntryImage> list,
-        string? ids,
-        Dictionary<int, string> map,
-        Guid entryId)
+    private async Task<HashSet<Guid>> LoadExistingExitsInBatches(CancellationToken token)
     {
-        if (string.IsNullOrWhiteSpace(ids)) return;
+        var existingExitIds = new HashSet<Guid>();
+        var exitBatchSize = 100000;
+        var skipCount = 0;
 
-        var idList = ids
-            .Split(',', StringSplitOptions.RemoveEmptyEntries)
-            .Select(x => int.Parse(x.Trim()))
-            .Where(map.ContainsKey)
+        while (true)
+        {
+            var batch = await eventDbContext.Exits
+                .AsNoTracking()
+                .OrderBy(e => e.Id)
+                .Skip(skipCount)
+                .Take(exitBatchSize)
+                .Select(e => e.Id)
+                .ToListAsync(token);
+
+            if (!batch.Any()) break;
+
+            foreach (var id in batch)
+                existingExitIds.Add(id);
+
+            skipCount += exitBatchSize;
+        }
+
+        return existingExitIds;
+    }
+
+    private async Task<HashSet<Guid>> LoadRelevantAccessKeys(CancellationToken token)
+    {
+        var relevantAccessKeyIds = await parkingDbContext.EventOuts
+            .AsNoTracking()
+            .Where(e => e.EventInIdentityId.HasValue || e.IdentityId.HasValue)
+            .Select(e => new { e.EventInIdentityId, e.IdentityId })
+            .ToListAsync(token);
+
+        var accessKeyIdsToCheck = relevantAccessKeyIds
+            .SelectMany(x => new[] { x.EventInIdentityId, x.IdentityId })
+            .Where(id => id.HasValue)
+            .Select(id => id.Value)
+            .Distinct()
             .ToList();
+
+        return new HashSet<Guid>(
+            await eventDbContext.AccessKeys
+                .AsNoTracking()
+                .Where(ak => accessKeyIdsToCheck.Contains(ak.Id))
+                .Select(ak => ak.Id)
+                .ToListAsync(token));
+    }
+
+    private List<int> ParseImageIds(string? ids)
+    {
+        if (string.IsNullOrWhiteSpace(ids)) return new List<int>();
+
+        return _parsedImageIds.GetOrAdd(ids, key =>
+            key.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                .Select(x => int.Parse(x.Trim()))
+                .ToList()
+        );
+    }
+
+    private void AddEntryImages(List<EntryImage> list, string? ids, Dictionary<int, string> map, Guid entryId)
+    {
+        if (string.IsNullOrEmpty(ids)) return;
+
+        var idList = ParseImageIds(ids).Where(map.ContainsKey).ToList();
 
         foreach (var fid in idList)
         {
@@ -193,19 +258,11 @@ public class ExitService(ParkingDbContext parkingDbContext, EventDbContext event
         }
     }
 
-    private static void AddExitImages(
-        List<ExitImage> list,
-        string? ids,
-        Dictionary<int, string> map,
-        Guid exitId)
+    private void AddExitImages(List<ExitImage> list, string? ids, Dictionary<int, string> map, Guid exitId)
     {
-        if (string.IsNullOrWhiteSpace(ids)) return;
+        if (string.IsNullOrEmpty(ids)) return;
 
-        var idList = ids
-            .Split(',', StringSplitOptions.RemoveEmptyEntries)
-            .Select(x => int.Parse(x.Trim()))
-            .Where(map.ContainsKey)
-            .ToList();
+        var idList = ParseImageIds(ids).Where(map.ContainsKey).ToList();
 
         foreach (var fid in idList)
         {
@@ -231,76 +288,4 @@ public class ExitService(ParkingDbContext parkingDbContext, EventDbContext event
 
         return "UNKNOWN";
     }
-    // private async Task InsertExitImagesAsync(EventOut eo, CancellationToken token)
-    // {
-    //     if (eo.EventOutFiles == null || !eo.EventOutFiles.Any()) return;
-    //
-    //     var newImages = new List<ExitImage>();
-    //
-    //     foreach (var eif in eo.EventOutFiles)
-    //     {
-    //         if (eif.File == null) continue;
-    //
-    //         var newType = ConvertImageType(eif.ImageType);
-    //         bool existsImage = await eventDbContext.ExitImages.AnyAsync(img =>
-    //             img.ExitId == eo.Id &&
-    //             img.ObjectKey == eif.File.ObjectKey &&
-    //             img.Type == newType, token);
-    //
-    //         if (!existsImage)
-    //         {
-    //             newImages.Add(new ExitImage
-    //             {
-    //                 ExitId = eo.Id,
-    //                 ObjectKey = eif.File.ObjectKey,
-    //                 Type = newType,
-    //             });
-    //         }
-    //     }
-    //
-    //     if (newImages.Any())
-    //         await eventDbContext.BulkInsertAsync(newImages, cancellationToken: token);
-    // }
-
-    // private async Task InsertEntryImagesAsync(EventIn ei, CancellationToken token)
-    // {
-    //     if (ei.EventInFiles == null || !ei.EventInFiles.Any()) return;
-    //
-    //     var newImages = new List<EntryImage>();
-    //
-    //     foreach (var eif in ei.EventInFiles)
-    //     {
-    //         if (eif.File == null) continue;
-    //
-    //         var newType = ConvertImageType(eif.ImageType);
-    //         bool existsImage = await eventDbContext.EntryImages.AnyAsync(img =>
-    //             img.EntryId == ei.Id &&
-    //             img.ObjectKey == eif.File.ObjectKey &&
-    //             img.Type == newType, token);
-    //
-    //         if (!existsImage)
-    //         {
-    //             newImages.Add(new EntryImage
-    //             {
-    //                 EntryId = ei.Id,
-    //                 ObjectKey = eif.File.ObjectKey,
-    //                 Type = newType,
-    //             });
-    //         }
-    //     }
-    //
-    //     if (newImages.Any())
-    //         await eventDbContext.BulkInsertAsync(newImages, cancellationToken: token);
-    // }
-
-    // private static string ConvertImageType(string? oldType)
-    // {
-    //     return oldType switch
-    //     {
-    //         "Plate" => "PLATE_NUMBER",
-    //         "Overview" => "PANORAMA",
-    //         "Vehicle" => "VEHICLE",
-    //         _ => "UNKNOWN"
-    //     };
-    // }
 }

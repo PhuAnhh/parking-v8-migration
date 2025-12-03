@@ -58,8 +58,8 @@ public class AccessKeyCollectionService(
                         VehicleType = MapVehicleType(ig.VehicleTypeId),
                         Enabled = ig.Enabled,
                         Deleted = ig.Deleted,
-                        CreatedUtc = ig.CreatedUtc,
-                        UpdatedUtc = ig.UpdatedUtc ?? DateTime.UtcNow,
+                        CreatedUtc = DateTime.UtcNow,
+                        UpdatedUtc = DateTime.UtcNow,
                     };
 
                     var aKCEvent = new AccessKeyCollection
@@ -70,8 +70,8 @@ public class AccessKeyCollectionService(
                         VehicleType = MapVehicleType(ig.VehicleTypeId),
                         Enabled = ig.Enabled,
                         Deleted = ig.Deleted,
-                        CreatedUtc = ig.CreatedUtc,
-                        UpdatedUtc = ig.UpdatedUtc ?? DateTime.UtcNow,
+                        CreatedUtc = DateTime.UtcNow,
+                        UpdatedUtc = DateTime.UtcNow,
                     };
 
                     newResourceCollections.Add(aKCResource);

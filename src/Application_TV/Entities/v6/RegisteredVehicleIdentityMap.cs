@@ -5,4 +5,6 @@ public class RegisteredVehicleIdentityMap
     public int Id { get; set; }
     public Guid RegisteredVehicleId { get; set; }
     public Guid IdentityId { get; set; }
+    
+    public Identity Identity { get; set; }
 }

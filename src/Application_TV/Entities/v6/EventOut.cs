@@ -6,13 +6,13 @@ public class EventOut
     public Guid? IdentityId { get; set; }
     public Guid LaneId { get; set; }
     public string? PlateNumber { get; set; }
-    public string PhysicalFileIds { get; set; }
+    public string? PhysicalFileIds { get; set; }
     public Guid? EventInIdentityId { get; set; }
     public Guid EventInLaneId { get; set; }
     public string? EventInPlateNumber { get; set; }
     public DateTime EventInCreatedUtc { get; set; }
     public Guid EventInCreatedBy { get; set; }
-    public string EventInPhysicalFileIds { get; set; }
+    public string? EventInPhysicalFileIds { get; set; }
     public long Charge { get; set; }
     public long Discount { get; set; }
     public DateTime CreatedUtc { get; set; }

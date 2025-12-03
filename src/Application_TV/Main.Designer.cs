@@ -31,6 +31,7 @@ partial class Main
     /// </summary>
     private void InitializeComponent()
     {
+        System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Main));
         btnStart = new System.Windows.Forms.Button();
         btnStop = new System.Windows.Forms.Button();
         txtLog = new System.Windows.Forms.TextBox();
@@ -87,6 +88,7 @@ partial class Main
         Controls.Add(txtLog);
         Controls.Add(btnStop);
         Controls.Add(btnStart);
+        Icon = ((System.Drawing.Icon)resources.GetObject("$this.Icon"));
         StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
         Text = "Migration Trung Văn";
         ResumeLayout(false);

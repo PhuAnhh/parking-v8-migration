@@ -28,7 +28,6 @@ public class EntryService(ParkingDbContext parkingDbContext, EventDbContext even
         var existingAccessKeys = new HashSet<Guid>(
             await eventDbContext.AccessKeys.AsNoTracking().Select(ak => ak.Id).ToListAsync(token));
 
-        // Load PhysicalFile map
         var fileMap = await parkingDbContext.PhysicalFiles
             .AsNoTracking()
             .ToDictionaryAsync(f => f.Id, f => f.FileKey, token);

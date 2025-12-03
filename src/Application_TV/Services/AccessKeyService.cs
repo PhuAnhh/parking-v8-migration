@@ -35,89 +35,6 @@ public class AccessKeyService(
         DateTime? lastIdentityCreated = null;
         DateTime? lastVehicleCreated = null;
 
-        //Identity
-        while (true)
-        {
-            var identities = await identitiesQuery
-                .Where(i => lastIdentityCreated == null || i.CreatedUtc > lastIdentityCreated)
-                .Take(batchSize)
-                .ToListAsync(token);
-
-            if (!identities.Any()) break;
-
-            var newAccessKeys = new List<AccessKey>();
-
-            foreach (var i in identities)
-            {
-                token.ThrowIfCancellationRequested();
-
-                if (existingEventAKeys.Contains(i.Id) || existingResourceAKeys.Contains(i.Id))
-                {
-                    skipped++;
-                    log($"[SKIPPED - IDENTITY] {i.Id} - {i.Name}");
-                    continue;
-                }
-
-                AccessKey accessKey;
-
-                if (i.Type == "PlateNumber")
-                {
-                    
-                    accessKey = new AccessKey
-                    {
-                        Id = i.Id,
-                        Name = i.Name,
-                        Code = i.Code ?? "",
-                        Type = "VEHICLE",
-                        CollectionId = i.IdentityGroupId,
-                        Status = "IN_USE",
-                        Deleted = i.Deleted,
-                        CreatedUtc = i.CreatedUtc,
-                        UpdatedUtc = i.UpdatedUtc ?? DateTime.UtcNow,
-                    };
-                }
-                else if (i.Type == "Card")
-                {
-                    accessKey = new AccessKey
-                    {
-                        Id = i.Id,
-                        Name = i.Name,
-                        Code = i.Code ?? "",
-                        Type = "CARD",
-                        CollectionId = i.IdentityGroupId,
-                        Status = i.Status switch
-                        {
-                            "InUse" => "IN_USE",
-                            "Locked" => "LOCKED",
-                            "NotUse" => "UN_USED"
-                        },
-                        Deleted = i.Deleted,
-                        CreatedUtc = i.CreatedUtc,
-                        UpdatedUtc = i.UpdatedUtc ?? DateTime.UtcNow,
-                    };
-                }
-                else
-                {
-                    continue;
-                }
-
-                newAccessKeys.Add(accessKey);
-                existingEventAKeys.Add(i.Id);
-                existingResourceAKeys.Add(i.Id);
-
-                inserted++;
-                log($"[INSERTED - {i.Type.ToUpper()}] {i.Id} - {i.Name}");
-            }
-
-            if (newAccessKeys.Any())
-            {
-                await eventDbContext.BulkInsertAsync(newAccessKeys, cancellationToken: token);
-                await resourceDbContext.BulkInsertAsync(newAccessKeys, cancellationToken: token);
-            }
-
-            lastIdentityCreated = identities.Last().CreatedUtc;
-        }
-
         //Vehicle
         while (true)
         {
@@ -141,13 +58,9 @@ public class AccessKeyService(
                     continue;
                 }
 
-                var identityGroupId = await (
-                        from map in parkingDbContext.RegisteredVehicleIdentityMaps
-                        join identity in parkingDbContext.Identites on map.IdentityId equals identity.Id
-                        where map.RegisteredVehicleId == v.Id
-                              && !identity.Deleted
-                        select identity.IdentityGroupId
-                    )
+                var identityGroupId = await parkingDbContext.RegisteredVehicleIdentityMaps
+                    .Where(m => m.RegisteredVehicleId == v.Id && !m.Identity.Deleted)
+                    .Select(m => m.Identity.IdentityGroupId)
                     .FirstOrDefaultAsync(token);
 
                 var ak = new AccessKey
@@ -182,6 +95,88 @@ public class AccessKeyService(
             lastVehicleCreated = vehicles.Last().CreatedUtc;
         }
 
+        //Identity
+        while (true)
+        {
+            var identities = await identitiesQuery
+                .Where(i => lastIdentityCreated == null || i.CreatedUtc > lastIdentityCreated)
+                .Take(batchSize)
+                .ToListAsync(token);
+
+            if (!identities.Any()) break;
+
+            var newAccessKeys = new List<AccessKey>();
+
+            foreach (var i in identities)
+            {
+                token.ThrowIfCancellationRequested();
+
+                if (existingEventAKeys.Contains(i.Id) || existingResourceAKeys.Contains(i.Id))
+                {
+                    skipped++;
+                    log($"[SKIPPED - IDENTITY] {i.Id} - {i.Name}");
+                    continue;
+                }
+
+                AccessKey accessKey;
+
+                if (i.Type == "PlateNumber")
+                {
+                    accessKey = new AccessKey
+                    {
+                        Id = i.Id,
+                        Name = i.Name,
+                        Code = i.Code ?? "",
+                        Type = "VEHICLE",
+                        CollectionId = i.IdentityGroupId,
+                        Status = "IN_USE",
+                        Deleted = i.Deleted,
+                        CreatedUtc = i.CreatedUtc,
+                        UpdatedUtc = DateTime.UtcNow,
+                    };
+                }
+                else if (i.Type == "Card")
+                {
+                    accessKey = new AccessKey
+                    {
+                        Id = i.Id,
+                        Name = i.Name,
+                        Code = i.Code ?? "",
+                        Type = "CARD",
+                        CollectionId = i.IdentityGroupId,
+                        Status = i.Status switch
+                        {
+                            "InUse" => "IN_USE",
+                            "Locked" => "LOCKED",
+                            "NotUse" => "UN_USED"
+                        },
+                        Deleted = i.Deleted,
+                        CreatedUtc = i.CreatedUtc,
+                        UpdatedUtc = DateTime.UtcNow,
+                    };
+                }
+                else
+                {
+                    continue;
+                }
+
+                newAccessKeys.Add(accessKey);
+                existingEventAKeys.Add(i.Id);
+                existingResourceAKeys.Add(i.Id);
+
+                inserted++;
+                log($"[INSERTED - {i.Type.ToUpper()}] {i.Id} - {i.Name}");
+            }
+
+            if (newAccessKeys.Any())
+            {
+                await eventDbContext.BulkInsertAsync(newAccessKeys, cancellationToken: token);
+                await resourceDbContext.BulkInsertAsync(newAccessKeys, cancellationToken: token);
+            }
+
+            lastIdentityCreated = identities.Last().CreatedUtc;
+        }
+
         log("========== KẾT QUẢ ==========");
         log($"Thành công: {inserted}");
         log($"Tồn tại: {skipped}");
@@ -195,6 +190,17 @@ public class AccessKeyService(
         foreach (var m in maps)
         {
             token.ThrowIfCancellationRequested();
+            
+            var identityType = await parkingDbContext.Identites
+                .Where(x => x.Id == m.IdentityId)
+                .Select(x => x.Type)
+                .FirstOrDefaultAsync(token);
+
+            if (identityType == "PlateNumber")
+            {
+                log($"[SKIPPED - METRIC] Identity {m.IdentityId} is PlateNumber");
+                continue;
+            }
 
             if (!existingEventAKeys.Contains(m.IdentityId))
             {
@@ -210,8 +216,8 @@ public class AccessKeyService(
 
             newMetrics.Add(new AccessKeyMetric
             {
-                AccessKeyId = m.IdentityId,
-                RelatedAccessKeyId = m.RegisteredVehicleId,
+                AccessKeyId = m.RegisteredVehicleId,
+                RelatedAccessKeyId = m.IdentityId
             });
         }
 
