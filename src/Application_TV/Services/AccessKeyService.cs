@@ -63,6 +63,23 @@ public class AccessKeyService(
                     .Select(m => m.Identity.IdentityGroupId)
                     .FirstOrDefaultAsync(token);
 
+                if (identityGroupId == Guid.Empty)
+                {
+                    skipped++;
+                    log($"[SKIPPED - VEHICLE - NO IDENTITY GROUP] {v.Id} - {v.PlateNumber}");
+                    continue;
+                }
+
+                var groupExists = await parkingDbContext.IdentityGroups
+                    .AnyAsync(g => g.Id == identityGroupId && !g.Deleted, token);
+
+                if (!groupExists)
+                {
+                    skipped++;
+                    log($"[SKIPPED - VEHICLE - GROUP NOT FOUND] {v.Id} - {v.PlateNumber}");
+                    continue;
+                }
+
                 var ak = new AccessKey
                 {
                     Id = v.Id,
@@ -190,7 +207,7 @@ public class AccessKeyService(
         foreach (var m in maps)
         {
             token.ThrowIfCancellationRequested();
-            
+
             var identityType = await parkingDbContext.Identites
                 .Where(x => x.Id == m.IdentityId)
                 .Select(x => x.Type)

@@ -32,6 +32,14 @@ public class EntryService(ParkingDbContext parkingDbContext, EventDbContext even
             .AsNoTracking()
             .ToDictionaryAsync(f => f.Id, f => f.FileKey, token);
 
+        var existingImages = new HashSet<(Guid EntryId, string ObjectKey)>(
+            (await eventDbContext.EntryImages
+                .AsNoTracking()
+                .Select(x => new { x.EntryId, x.ObjectKey })
+                .ToListAsync(token))
+            .Select(x => (x.EntryId, x.ObjectKey))
+        );
+
         while (true)
         {
             var entries = await query
@@ -98,12 +106,19 @@ public class EntryService(ParkingDbContext parkingDbContext, EventDbContext even
                         string fileKey = fileMap[id];
                         string imgType = ConvertType(fileKey);
 
+                        var key = (ei.Id, fileKey);
+
+                        if (existingImages.Contains(key))
+                            continue;
+
                         newImages.Add(new EntryImage
                         {
                             EntryId = ei.Id,
                             ObjectKey = fileKey,
                             Type = imgType
                         });
+
+                        existingImages.Add(key);
                     }
                 }
             }

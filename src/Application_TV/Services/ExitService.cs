@@ -3,14 +3,11 @@ using Application_TV.DbContexts.v8;
 using Application_TV.Entities.v8;
 using EFCore.BulkExtensions;
 using Microsoft.EntityFrameworkCore;
-using System.Collections.Concurrent;
 
 namespace Application_TV.Services;
 
 public class ExitService(ParkingDbContext parkingDbContext, EventDbContext eventDbContext)
 {
-    private readonly ConcurrentDictionary<string, List<int>> _parsedImageIds = new();
-
     public async Task InsertExit(Action<string> log, CancellationToken token)
     {
         var batchSize = 10000;
@@ -19,20 +16,18 @@ public class ExitService(ParkingDbContext parkingDbContext, EventDbContext event
         eventDbContext.ChangeTracker.AutoDetectChangesEnabled = false;
         eventDbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
 
-        log("Đang load danh sách exits đã tồn tại...");
-        var existingExits = await LoadExistingExitsInBatches(token);
-        log($"Đã load {existingExits.Count} exits tồn tại");
-
         log("Đang load customers và collections...");
         var existingCustomers = new HashSet<Guid>(
-            await eventDbContext.Customers.AsNoTracking().Select(c => c.Id).ToListAsync(token));
+            await eventDbContext.Customers
+                .AsNoTracking()
+                .Select(c => c.Id)
+                .ToListAsync(token));
 
         var existingCollections = new HashSet<Guid>(
-            await eventDbContext.AccessKeyCollections.AsNoTracking().Select(ac => ac.Id).ToListAsync(token));
-
-        log("Đang load access keys...");
-        var existingAccessKeys = await LoadRelevantAccessKeys(token);
-        log($"Đã load {existingAccessKeys.Count} access keys");
+            await eventDbContext.AccessKeyCollections
+                .AsNoTracking()
+                .Select(ac => ac.Id)
+                .ToListAsync(token));
 
         log("Đang load file map...");
         var fileMap = await parkingDbContext.PhysicalFiles
@@ -49,18 +44,54 @@ public class ExitService(ParkingDbContext parkingDbContext, EventDbContext event
         };
 
         DateTime? lastCreatedUtc = null;
+        Guid? lastId = null;
 
         while (true)
         {
-            var exits = await parkingDbContext.EventOuts
-                .AsNoTracking()
-                .Where(e => lastCreatedUtc == null || e.CreatedUtc > lastCreatedUtc)
+            token.ThrowIfCancellationRequested();
+
+            var query = parkingDbContext.EventOuts.AsNoTracking();
+
+            if (lastCreatedUtc.HasValue)
+            {
+                var lc = lastCreatedUtc.Value;
+                var lid = lastId!.Value;
+
+                query = query.Where(e =>
+                    e.CreatedUtc > lc ||
+                    (e.CreatedUtc == lc && e.Id.CompareTo(lid) > 0));
+            }
+
+            var exits = await query
                 .OrderBy(e => e.CreatedUtc)
                 .ThenBy(e => e.Id)
                 .Take(batchSize)
                 .ToListAsync(token);
 
             if (exits.Count == 0) break;
+
+            var batchExitIds = exits.Select(x => x.Id).ToList();
+
+            var existingBatchExits = new HashSet<Guid>(
+                await eventDbContext.Exits
+                    .AsNoTracking()
+                    .Where(x => batchExitIds.Contains(x.Id))
+                    .Select(x => x.Id)
+                    .ToListAsync(token));
+
+            var batchAccessKeyIds = exits
+                .SelectMany(e => new[] { e.EventInIdentityId, e.IdentityId })
+                .Where(id => id.HasValue)
+                .Select(id => id!.Value)
+                .Distinct()
+                .ToList();
+
+            var existingBatchAccessKeys = new HashSet<Guid>(
+                await eventDbContext.AccessKeys
+                    .AsNoTracking()
+                    .Where(ak => batchAccessKeyIds.Contains(ak.Id))
+                    .Select(ak => ak.Id)
+                    .ToListAsync(token));
 
             var newEntries = new List<Entry>();
             var newExits = new List<Exit>();
@@ -71,20 +102,22 @@ public class ExitService(ParkingDbContext parkingDbContext, EventDbContext event
             {
                 token.ThrowIfCancellationRequested();
 
-                if (existingExits.Contains(eo.Id))
+                if (existingBatchExits.Contains(eo.Id))
                 {
                     skipped++;
                     continue;
                 }
 
-                if (!eo.EventInIdentityId.HasValue || !existingAccessKeys.Contains(eo.EventInIdentityId.Value))
+                if (!eo.EventInIdentityId.HasValue ||
+                    !existingBatchAccessKeys.Contains(eo.EventInIdentityId.Value))
                 {
                     skipped++;
                     log($"[SKIPPED - MISSING ENTRY ACCESSKEY] {eo.Id}");
                     continue;
                 }
 
-                if (!eo.IdentityId.HasValue || !existingAccessKeys.Contains(eo.IdentityId.Value))
+                if (!eo.IdentityId.HasValue ||
+                    !existingBatchAccessKeys.Contains(eo.IdentityId.Value))
                 {
                     skipped++;
                     log($"[SKIPPED - MISSING EXIT ACCESSKEY] {eo.Id}");
@@ -147,10 +180,8 @@ public class ExitService(ParkingDbContext parkingDbContext, EventDbContext event
                 newEntries.Add(entry);
                 newExits.Add(exit);
 
-                existingExits.Add(exit.Id);
-
-                AddExitImages(newExitImages, eo.PhysicalFileIds, fileMap, eo.Id);
                 AddEntryImages(newEntryImages, eo.EventInPhysicalFileIds, fileMap, newEntryId);
+                AddExitImages(newExitImages, eo.PhysicalFileIds, fileMap, eo.Id);
 
                 inserted++;
             }
@@ -167,75 +198,27 @@ public class ExitService(ParkingDbContext parkingDbContext, EventDbContext event
             if (newExitImages.Any())
                 await eventDbContext.BulkInsertAsync(newExitImages, bulkConfig, cancellationToken: token);
 
-            lastCreatedUtc = exits.Last().CreatedUtc;
+            eventDbContext.ChangeTracker.Clear();
+
+            var last = exits[^1];
+            lastCreatedUtc = last.CreatedUtc;
+            lastId = last.Id;
 
             log($"Đã xử lý: {inserted + skipped} | Thành công: {inserted} | Bỏ qua: {skipped}");
         }
 
         log("========== KẾT QUẢ ==========");
         log($"Thành công: {inserted}");
-        log($"Tồn tại: {skipped}");
+        log($"Bỏ qua: {skipped}");
     }
 
-    private async Task<HashSet<Guid>> LoadExistingExitsInBatches(CancellationToken token)
+    private static List<int> ParseImageIds(string? ids)
     {
-        var existingExitIds = new HashSet<Guid>();
-        var exitBatchSize = 100000;
-        var skipCount = 0;
+        if (string.IsNullOrWhiteSpace(ids)) return [];
 
-        while (true)
-        {
-            var batch = await eventDbContext.Exits
-                .AsNoTracking()
-                .OrderBy(e => e.Id)
-                .Skip(skipCount)
-                .Take(exitBatchSize)
-                .Select(e => e.Id)
-                .ToListAsync(token);
-
-            if (!batch.Any()) break;
-
-            foreach (var id in batch)
-                existingExitIds.Add(id);
-
-            skipCount += exitBatchSize;
-        }
-
-        return existingExitIds;
-    }
-
-    private async Task<HashSet<Guid>> LoadRelevantAccessKeys(CancellationToken token)
-    {
-        var relevantAccessKeyIds = await parkingDbContext.EventOuts
-            .AsNoTracking()
-            .Where(e => e.EventInIdentityId.HasValue || e.IdentityId.HasValue)
-            .Select(e => new { e.EventInIdentityId, e.IdentityId })
-            .ToListAsync(token);
-
-        var accessKeyIdsToCheck = relevantAccessKeyIds
-            .SelectMany(x => new[] { x.EventInIdentityId, x.IdentityId })
-            .Where(id => id.HasValue)
-            .Select(id => id.Value)
-            .Distinct()
+        return ids.Split(',', StringSplitOptions.RemoveEmptyEntries)
+            .Select(x => int.Parse(x.Trim()))
             .ToList();
-
-        return new HashSet<Guid>(
-            await eventDbContext.AccessKeys
-                .AsNoTracking()
-                .Where(ak => accessKeyIdsToCheck.Contains(ak.Id))
-                .Select(ak => ak.Id)
-                .ToListAsync(token));
-    }
-
-    private List<int> ParseImageIds(string? ids)
-    {
-        if (string.IsNullOrWhiteSpace(ids)) return new List<int>();
-
-        return _parsedImageIds.GetOrAdd(ids, key =>
-            key.Split(',', StringSplitOptions.RemoveEmptyEntries)
-                .Select(x => int.Parse(x.Trim()))
-                .ToList()
-        );
     }
 
     private void AddEntryImages(List<EntryImage> list, string? ids, Dictionary<int, string> map, Guid entryId)
@@ -248,6 +231,9 @@ public class ExitService(ParkingDbContext parkingDbContext, EventDbContext event
         {
             var key = map[fid];
             var type = ConvertType(key);
+
+            if (list.Any(x => x.EntryId == entryId && x.ObjectKey == key))
+                continue;
 
             list.Add(new EntryImage
             {
@@ -268,6 +254,9 @@ public class ExitService(ParkingDbContext parkingDbContext, EventDbContext event
         {
             var key = map[fid];
             var type = ConvertType(key);
+
+            if (list.Any(x => x.ExitId == exitId && x.ObjectKey == key))
+                continue;
 
             list.Add(new ExitImage
             {
