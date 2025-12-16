@@ -11,10 +11,11 @@ public class EntryService(ParkingDbContext parkingDbContext, EventDbContext even
 {
     public async Task InsertEntry(Action<string> log, CancellationToken token)
     {
-        var batchSize = 5000;
+        const int batchSize = 5000;
         int inserted = 0, skipped = 0;
 
-        var query = parkingDbContext.EventIns.AsNoTracking()
+        var query = parkingDbContext.EventIns
+            .AsNoTracking()
             .Where(e => !e.Deleted && e.Status == "Parking")
             .OrderBy(e => e.CreatedUtc)
             .Include(e => e.EventInFiles)
@@ -23,23 +24,37 @@ public class EntryService(ParkingDbContext parkingDbContext, EventDbContext even
         DateTime? lastCreatedUtc = null;
 
         var existingEntries = new HashSet<Guid>(
-            await eventDbContext.Entries.AsNoTracking().Select(e => e.Id).ToListAsync(token));
+            await eventDbContext.Entries
+                .AsNoTracking()
+                .Select(e => e.Id)
+                .ToListAsync(token));
 
         var existingCustomers = new HashSet<Guid>(
-            await eventDbContext.Customers.AsNoTracking().Select(c => c.Id).ToListAsync(token));
+            await eventDbContext.Customers
+                .AsNoTracking()
+                .Select(c => c.Id)
+                .ToListAsync(token));
 
         var existingAccessKeys = new HashSet<Guid>(
-            await eventDbContext.AccessKeys.AsNoTracking().Select(ak => ak.Id).ToListAsync(token));
+            await eventDbContext.AccessKeys
+                .AsNoTracking()
+                .Select(ak => ak.Id)
+                .ToListAsync(token));
+
+        var existingCollections = new HashSet<Guid>(
+            await eventDbContext.AccessKeyCollections
+                .AsNoTracking()
+                .Select(c => c.Id)
+                .ToListAsync(token));
 
         while (true)
         {
             var entries = await query
                 .Where(e => lastCreatedUtc == null || e.CreatedUtc > lastCreatedUtc)
-                .OrderBy(e => e.CreatedUtc)
                 .Take(batchSize)
                 .ToListAsync(token);
 
-            if (entries.Count == 0)
+            if (!entries.Any())
                 break;
 
             var newEntries = new List<Entry>();
@@ -49,47 +64,64 @@ public class EntryService(ParkingDbContext parkingDbContext, EventDbContext even
             {
                 token.ThrowIfCancellationRequested();
 
-                bool existsEntry = existingEntries.Contains(ei.Id);
-                bool existsCustomer = ei.CustomerId.HasValue && existingCustomers.Contains(ei.CustomerId.Value);
-
-                if (!existingAccessKeys.Contains(ei.IdentityId))
-                    continue;
-
-                if (!existsEntry)
-                {
-                    var entry = new Entry
-                    {
-                        Id = ei.Id,
-                        AccessKeyId = ei.IdentityId,
-                        DeviceId = ei.LaneId,
-                        PlateNumber = ei.PlateNumber,
-                        CustomerId = existsCustomer ? ei.CustomerId : null,
-                        Exited = false,
-                        Amount = ei.TotalPaid,
-                        CreatedBy = ei.CreatedBy,
-                        Note = ei.Note,
-                        Deleted = ei.Deleted,
-                        CreatedUtc = ei.CreatedUtc,
-                        UpdatedUtc = ei.UpdatedUtc,
-                    };
-
-                    newEntries.Add(entry);
-                    imageQueue.Add(ei);
-
-                    existingEntries.Add(entry.Id);
-
-                    inserted++;
-                    log($"[INSERTED] {ei.Id}");
-                }
-                else
+                if (existingEntries.Contains(ei.Id))
                 {
                     skipped++;
-                    log($"[SKIPPED] {ei.Id}");
+                    log($"[SKIPPED - EXISTS] {ei.Id}");
+                    continue;
                 }
+
+                if (!existingAccessKeys.Contains(ei.IdentityId))
+                {
+                    skipped++;
+                    log($"[SKIPPED - NO ACCESS KEY] {ei.Id} - IdentityId: {ei.IdentityId}");
+                    continue;
+                }
+
+                if (ei.IdentityGroupId == null || !existingCollections.Contains(ei.IdentityGroupId))
+                {
+                    skipped++;
+                    log($"[SKIPPED - NO COLLECTION] {ei.Id} - CollectionId: {ei.IdentityGroupId}");
+                    continue;
+                }
+
+                bool existsCustomer =
+                    ei.CustomerId.HasValue &&
+                    existingCustomers.Contains(ei.CustomerId.Value);
+
+                var entry = new Entry
+                {
+                    Id = ei.Id,
+                    AccessKeyId = ei.IdentityId,
+                    CollectionId = ei.IdentityGroupId,
+                    DeviceId = ei.LaneId,
+                    PlateNumber = ei.PlateNumber,
+                    CustomerId = existsCustomer ? ei.CustomerId : null,
+                    Exited = false,
+                    Amount = ei.TotalPaid,
+                    CreatedBy = ei.CreatedBy,
+                    Note = ei.Note,
+                    Deleted = ei.Deleted,
+                    CreatedUtc = ei.CreatedUtc,
+                    UpdatedUtc = ei.UpdatedUtc,
+                };
+
+                newEntries.Add(entry);
+                imageQueue.Add(ei);
+
+                existingEntries.Add(entry.Id);
+
+                inserted++;
+                log($"[INSERTED] {ei.Id}");
             }
 
             if (newEntries.Any())
-                await eventDbContext.BulkInsertAsync(newEntries, cancellationToken: token);
+            {
+                await eventDbContext.BulkInsertAsync(
+                    newEntries,
+                    cancellationToken: token
+                );
+            }
 
             foreach (var ei in imageQueue)
                 await InsertEntryImagesAsync(ei, token);
@@ -101,7 +133,7 @@ public class EntryService(ParkingDbContext parkingDbContext, EventDbContext even
 
         log("========== KẾT QUẢ ==========");
         log($"Thành công: {inserted}");
-        log($"Tồn tại: {skipped}");
+        log($"Bỏ qua: {skipped}");
     }
 
     private async Task InsertEntryImagesAsync(EventIn ei, CancellationToken token)
@@ -117,11 +149,15 @@ public class EntryService(ParkingDbContext parkingDbContext, EventDbContext even
                 continue;
 
             var newType = ConvertImageType(eif.ImageType);
+            if (newType == null)
+                continue;
 
-            bool existsImage = await eventDbContext.EntryImages.AnyAsync(img =>
-                img.EntryId == ei.Id &&
-                img.ObjectKey == eif.File.ObjectKey &&
-                img.Type == newType, token);
+            bool existsImage = await eventDbContext.EntryImages.AnyAsync(
+                img =>
+                    img.EntryId == ei.Id &&
+                    img.ObjectKey == eif.File.ObjectKey &&
+                    img.Type == newType,
+                token);
 
             if (!existsImage)
             {

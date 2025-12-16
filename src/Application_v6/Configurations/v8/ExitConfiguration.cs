@@ -13,6 +13,7 @@ public class ExitConfiguration : IEntityTypeConfiguration<Exit>
         builder.Property(x => x.Id).HasColumnName("id");
         builder.Property(x => x.EntryId).HasColumnName("entry_id");
         builder.Property(x => x.AccessKeyId).HasColumnName("access_key_id");
+        builder.Property(x => x.CollectionId).HasColumnName("collection_id");
         builder.Property(x => x.PlateNumber).HasColumnName("plate_number");
         builder.Property(x => x.DeviceId).HasColumnName("device_id");
         builder.Property(x => x.CustomerId).HasColumnName("customer_id");

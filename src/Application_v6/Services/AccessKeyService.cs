@@ -15,14 +15,31 @@ public class AccessKeyService(
     public async Task InsertAccessKey(Action<string> log, CancellationToken token)
     {
         int inserted = 0, skipped = 0;
-        var batchSize = 5000;
+        const int batchSize = 5000;
 
         var existingEventAKeys = new HashSet<Guid>(
-            await eventDbContext.AccessKeys.AsNoTracking().Select(x => x.Id).ToListAsync(token));
+            await eventDbContext.AccessKeys
+                .AsNoTracking()
+                .Select(x => x.Id)
+                .ToListAsync(token));
+
         var existingResourceAKeys = new HashSet<Guid>(
-            await resourceDbContext.AccessKeys.AsNoTracking().Select(x => x.Id).ToListAsync(token));
+            await resourceDbContext.AccessKeys
+                .AsNoTracking()
+                .Select(x => x.Id)
+                .ToListAsync(token));
+
         var existingCustomers = new HashSet<Guid>(
-            await eventDbContext.Customers.AsNoTracking().Select(c => c.Id).ToListAsync(token));
+            await eventDbContext.Customers
+                .AsNoTracking()
+                .Select(c => c.Id)
+                .ToListAsync(token));
+
+        var existingCollections = new HashSet<Guid>(
+            await eventDbContext.AccessKeyCollections
+                .AsNoTracking()
+                .Select(x => x.Id)
+                .ToListAsync(token));
 
         var identitiesQuery = parkingDbContext.Identites
             .Where(i => !i.Deleted)
@@ -35,7 +52,7 @@ public class AccessKeyService(
         DateTime? lastIdentityCreated = null;
         DateTime? lastVehicleCreated = null;
 
-        //Identity
+        // ================== IDENTITY ==================
         while (true)
         {
             var identities = await identitiesQuery
@@ -54,7 +71,14 @@ public class AccessKeyService(
                 if (existingEventAKeys.Contains(i.Id) || existingResourceAKeys.Contains(i.Id))
                 {
                     skipped++;
-                    log($"[SKIPPED - IDENTITY] {i.Id} - {i.Name}");
+                    log($"[SKIPPED - IDENTITY - EXISTS] {i.Id} - {i.Name}");
+                    continue;
+                }
+
+                if (i.IdentityGroupId == null || !existingCollections.Contains(i.IdentityGroupId))
+                {
+                    skipped++;
+                    log($"[SKIPPED - IDENTITY - NO COLLECTION] {i.Id} - {i.Name}");
                     continue;
                 }
 
@@ -93,7 +117,7 @@ public class AccessKeyService(
             lastIdentityCreated = identities.Last().CreatedUtc;
         }
 
-        //Vehicle
+        // ================== VEHICLE ==================
         while (true)
         {
             var vehicles = await vehiclesQuery
@@ -113,18 +137,28 @@ public class AccessKeyService(
                 if (existingEventAKeys.Contains(v.Id) || existingResourceAKeys.Contains(v.Id))
                 {
                     skipped++;
-                    log($"[SKIPPED - VEHICLE] {v.Id} - {v.PlateNumber}");
+                    log($"[SKIPPED - VEHICLE - EXISTS] {v.Id} - {v.PlateNumber}");
                     continue;
                 }
 
                 var collectionId = await parkingDbContext.VehicleIdentities
                     .Where(vi => vi.VehicleId == v.Id)
-                    .Join(parkingDbContext.Identites,
+                    .Join(
+                        parkingDbContext.Identites,
                         vi => vi.IdentityId,
                         i => i.Id,
-                        (vi, i) => i.IdentityGroupId)
+                        (vi, i) => i.IdentityGroupId
+                    )
+                    .Where(x => x != null)
                     .Distinct()
                     .FirstOrDefaultAsync(token);
+
+                if (collectionId == null || !existingCollections.Contains(collectionId))
+                {
+                    skipped++;
+                    log($"[SKIPPED - VEHICLE - NO COLLECTION] {v.Id} - {v.PlateNumber}");
+                    continue;
+                }
 
                 var ak = new AccessKey
                 {
@@ -154,12 +188,11 @@ public class AccessKeyService(
 
                 foreach (var vi in relatedIdentities)
                 {
-                    var metric = new AccessKeyMetric
+                    newMetrics.Add(new AccessKeyMetric
                     {
                         AccessKeyId = v.Id,
                         RelatedAccessKeyId = vi.IdentityId
-                    };
-                    newMetrics.Add(metric);
+                    });
                 }
             }
 
@@ -180,6 +213,6 @@ public class AccessKeyService(
 
         log("========== KẾT QUẢ ==========");
         log($"Thành công: {inserted}");
-        log($"Tồn tại: {skipped}");
+        log($"Bỏ qua: {skipped}");
     }
 }

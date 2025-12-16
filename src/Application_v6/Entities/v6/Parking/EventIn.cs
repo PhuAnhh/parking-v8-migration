@@ -4,6 +4,7 @@ public class EventIn
 {
     public Guid Id { get; set; }
     public Guid IdentityId { get; set; }
+    public Guid IdentityGroupId { get; set; }
     public Guid? CustomerId { get; set; }
     public Guid LaneId { get; set; }
     public string PlateNumber { get; set; }
